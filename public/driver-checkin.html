@@ -278,6 +278,44 @@
         <div class="no-trips">Loading recent check-ins...</div>
       </div>
     </div>
+    
+    <div class="card location-tracking">
+      <h2>Bus Location Tracking</h2>
+      <p>Enable location sharing to help employees track your bus:</p>
+      
+      <div class="location-status-container" style="margin: 15px 0; text-align: center;">
+        <div id="locationStatus" class="status-indicator inactive" 
+             style="display: inline-block; padding: 10px 15px; border-radius: 4px; font-weight: bold;">
+          Tracking Inactive
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="routeName">Route Name:</label>
+        <input type="text" id="routeName" placeholder="Enter route name (e.g., Main St to Downtown)">
+      </div>
+      
+      <div class="form-group">
+        <label for="driverStatus">Status:</label>
+        <select id="driverStatus" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+          <option value="active">Active - On Route</option>
+          <option value="break">On Break</option>
+          <option value="inactive">Inactive - Off Duty</option>
+        </select>
+      </div>
+      
+      <div style="display: flex; gap: 10px;">
+        <button id="startTracking" class="button" style="flex: 1;">Start Location Tracking</button>
+        <button id="stopTracking" class="button" style="flex: 1; background-color: #e11d48;" disabled>Stop Tracking</button>
+      </div>
+      
+      <div style="margin-top: 15px; padding: 10px; background-color: #f3f4f6; border-radius: 4px;">
+        <p style="font-size: 14px; margin: 0;">
+          <strong>Note:</strong> Location data will be updated automatically while tracking is active.
+          Your bus position will be visible on the <a href="/bus-tracking" target="_blank" style="color: #2563eb;">Bus Tracking Map</a>.
+        </p>
+      </div>
+    </div>
   </div>
   
   <script>
