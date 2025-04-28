@@ -1,7 +1,15 @@
+import { eq, desc, sql, and } from "drizzle-orm";
+import { db } from "./db";
 import { users, trips, type User, type InsertUser, type Trip, type InsertTrip } from "@shared/schema";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
 // Interface for storage operations
 export interface IStorage {
+  // Session store
+  sessionStore: session.Store;
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -17,200 +25,364 @@ export interface IStorage {
   getTripsByDriverId(driverId: number): Promise<Trip[]>;
   completeTrip(id: number): Promise<Trip | undefined>;
   listRecentTrips(limit?: number): Promise<Trip[]>;
+  
+  // Setup operations
+  setupDatabase(): Promise<void>;
+  seedTestData(): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private trips: Map<number, Trip>;
-  private riderIds: Set<string>;
-  userCurrentId: number;
-  tripCurrentId: number;
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.trips = new Map();
-    this.riderIds = new Set();
-    this.userCurrentId = 1;
-    this.tripCurrentId = 1;
-    
-    // Add test users
-    this.initializeTestData();
-  }
-  
-  private initializeTestData() {
-    // Create a test driver
-    const driver = {
-      id: this.userCurrentId++,
-      username: "driver1",
-      password: "password123",
-      name: "John Driver",
-      userType: "driver",
-      riderId: null,
-      isActive: true,
-      createdAt: new Date()
-    } as User;
-    
-    // Create a test rider
-    const rider = {
-      id: this.userCurrentId++,
-      username: "rider1",
-      password: "password123",
-      name: "Jane Rider",
-      userType: "rider",
-      riderId: "12345",
-      isActive: true,
-      createdAt: new Date()
-    } as User;
-    
-    // Add users to the storage
-    this.users.set(driver.id, driver);
-    this.users.set(rider.id, rider);
-    
-    // Register the rider ID
-    if (rider.riderId) {
-      this.riderIds.add(rider.riderId);
-    }
-    
-    // Create some test trips
-    const trip1 = {
-      id: this.tripCurrentId++,
-      driverId: driver.id,
-      riderId: rider.riderId!,
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
-      location: "Main Street Bus Stop",
-      note: "Morning commute",
-      completed: true
-    } as Trip;
-    
-    const trip2 = {
-      id: this.tripCurrentId++,
-      driverId: driver.id,
-      riderId: rider.riderId!,
-      timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
-      location: "Downtown Transit Center",
-      note: "Afternoon return",
-      completed: true
-    } as Trip;
-    
-    // Add trips to storage
-    this.trips.set(trip1.id, trip1);
-    this.trips.set(trip2.id, trip2);
+    // Create a PostgreSQL session store
+    const PostgresStore = connectPg(session);
+    this.sessionStore = new PostgresStore({
+      pool,
+      createTableIfMissing: true,
+      tableName: 'session'
+    });
   }
 
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async getUserByRiderId(riderId: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.riderId === riderId,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    let riderId: string | null = null;
-    
-    if (insertUser.userType === "rider") {
-      // Use provided rider ID or generate one
-      if (insertUser.riderId) {
-        // Check if the provided rider ID is already taken
-        if (this.riderIds.has(insertUser.riderId)) {
-          throw new Error("This Rider ID is already in use. Please choose another one.");
-        }
-        riderId = insertUser.riderId;
+  // Set up the database with tables and initial data
+  async setupDatabase(): Promise<void> {
+    console.log("Setting up database...");
+    try {
+      // Check if tables exist
+      const hasUsers = await this.hasTable("users");
+      const hasTrips = await this.hasTable("trips");
+      
+      if (!hasUsers || !hasTrips) {
+        console.log("Creating database schema...");
+        // Push the schema to the database
+        await this.pushSchema();
+        // Add test data
+        await this.seedTestData();
       } else {
-        riderId = await this.generateRiderId();
+        console.log("Database schema already exists");
+      }
+    } catch (error) {
+      console.error("Error setting up database:", error);
+      throw error;
+    }
+  }
+
+  // Check if a table exists
+  private async hasTable(tableName: string): Promise<boolean> {
+    try {
+      const result = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public'
+          AND table_name = $1
+        );
+      `, [tableName]);
+      
+      return result.rows[0].exists;
+    } catch (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error);
+      return false;
+    }
+  }
+
+  // Push schema to database (this would normally use drizzle-kit but we're doing it manually)
+  private async pushSchema(): Promise<void> {
+    try {
+      // Create users table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          user_type TEXT NOT NULL,
+          rider_id TEXT,
+          name TEXT NOT NULL,
+          is_active BOOLEAN NOT NULL DEFAULT TRUE,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        );
+      `);
+      
+      // Create trips table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS trips (
+          id SERIAL PRIMARY KEY,
+          rider_id TEXT NOT NULL,
+          driver_id INTEGER NOT NULL,
+          timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          location TEXT,
+          completed BOOLEAN NOT NULL DEFAULT FALSE,
+          note TEXT
+        );
+      `);
+      
+      console.log("Database schema created successfully");
+    } catch (error) {
+      console.error("Error creating database schema:", error);
+      throw error;
+    }
+  }
+
+  // Add test data to the database
+  async seedTestData(): Promise<void> {
+    console.log("Seeding test data...");
+    try {
+      // Check if we already have users
+      const existingUsers = await db.select().from(users).limit(1);
+      if (existingUsers.length > 0) {
+        console.log("Test data already exists");
+        return;
+      }
+      
+      // Create test driver
+      const driver = await this.createUser({
+        username: "driver1",
+        password: "password123",
+        name: "John Driver",
+        userType: "driver"
+      });
+      
+      // Create test rider
+      const rider = await this.createUser({
+        username: "rider1",
+        password: "password123",
+        name: "Jane Rider",
+        userType: "rider",
+        riderId: "12345"
+      });
+      
+      // Create test trips
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      
+      await db.insert(trips).values([
+        {
+          driverId: driver.id,
+          riderId: rider.riderId!,
+          timestamp: yesterday,
+          location: "Main Street Bus Stop",
+          note: "Morning commute",
+          completed: true
+        },
+        {
+          driverId: driver.id,
+          riderId: rider.riderId!,
+          timestamp: twoDaysAgo,
+          location: "Downtown Transit Center",
+          note: "Afternoon return",
+          completed: true
+        }
+      ]);
+      
+      console.log("Test data seeded successfully");
+    } catch (error) {
+      console.error("Error seeding test data:", error);
+      throw error;
+    }
+  }
+
+  // Get user by ID
+  async getUser(id: number): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by ID:", error);
+      return undefined;
+    }
+  }
+
+  // Get user by username
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      return undefined;
+    }
+  }
+
+  // Get user by rider ID
+  async getUserByRiderId(riderId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.riderId, riderId));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by rider ID:", error);
+      return undefined;
+    }
+  }
+
+  // Create a new user
+  async createUser(insertUser: InsertUser): Promise<User> {
+    try {
+      // If user is a rider, make sure they have a rider ID
+      let riderId = insertUser.riderId;
+      
+      if (insertUser.userType === "rider") {
+        if (riderId) {
+          // Check if the rider ID is already taken
+          const existingUser = await this.getUserByRiderId(riderId);
+          if (existingUser) {
+            throw new Error("This Rider ID is already in use. Please choose another one.");
+          }
+        } else {
+          // Generate a rider ID if not provided
+          riderId = await this.generateRiderId();
+        }
+      }
+      
+      // Create the user with complete data
+      const userData = {
+        ...insertUser,
+        riderId: insertUser.userType === "rider" ? riderId : null
+      };
+      
+      // Insert the user and get the result
+      const [user] = await db.insert(users).values(userData).returning();
+      return user;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
+  }
+
+  // Generate a unique rider ID
+  async generateRiderId(): Promise<string> {
+    // Try up to 10 times to generate a unique ID
+    for (let i = 0; i < 10; i++) {
+      const riderId = Math.floor(10000 + Math.random() * 90000).toString();
+      
+      // Check if the ID is already taken
+      const existingUser = await this.getUserByRiderId(riderId);
+      if (!existingUser) {
+        return riderId;
       }
     }
     
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      riderId: riderId || null,
-      isActive: true,
-      createdAt: new Date()
-    };
-    
-    this.users.set(id, user);
-    if (riderId) {
-      this.riderIds.add(riderId);
-    }
-    
-    return user;
+    throw new Error("Failed to generate a unique rider ID after multiple attempts");
   }
 
-  async generateRiderId(): Promise<string> {
-    // Generate a random 5-digit ID that doesn't exist yet
-    let riderId: string;
-    do {
-      riderId = Math.floor(10000 + Math.random() * 90000).toString();
-    } while (this.riderIds.has(riderId));
-    
-    return riderId;
-  }
-
+  // List users, optionally filtering by user type
   async listUsers(userType?: string): Promise<User[]> {
-    if (userType) {
-      return Array.from(this.users.values()).filter(
-        (user) => user.userType === userType && user.isActive
-      );
+    try {
+      if (userType) {
+        return await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.userType, userType),
+            eq(users.isActive, true)
+          ));
+      } else {
+        return await db
+          .select()
+          .from(users)
+          .where(eq(users.isActive, true));
+      }
+    } catch (error) {
+      console.error("Error listing users:", error);
+      return [];
     }
-    return Array.from(this.users.values()).filter(user => user.isActive);
   }
 
+  // Create a new trip
   async createTrip(insertTrip: InsertTrip): Promise<Trip> {
-    const id = this.tripCurrentId++;
-    const trip: Trip = {
-      ...insertTrip,
-      id,
-      timestamp: new Date(),
-      completed: false,
-      location: insertTrip.location || null,
-      note: insertTrip.note || null
-    };
-    
-    this.trips.set(id, trip);
-    return trip;
-  }
-
-  async getTrip(id: number): Promise<Trip | undefined> {
-    return this.trips.get(id);
-  }
-
-  async getTripsByRiderId(riderId: string): Promise<Trip[]> {
-    return Array.from(this.trips.values()).filter(
-      (trip) => trip.riderId === riderId
-    ).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }
-
-  async getTripsByDriverId(driverId: number): Promise<Trip[]> {
-    return Array.from(this.trips.values()).filter(
-      (trip) => trip.driverId === driverId
-    ).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }
-
-  async completeTrip(id: number): Promise<Trip | undefined> {
-    const trip = this.trips.get(id);
-    if (trip) {
-      const updatedTrip = { ...trip, completed: true };
-      this.trips.set(id, updatedTrip);
-      return updatedTrip;
+    try {
+      console.log("Creating trip with data:", insertTrip);
+      
+      // Insert with current timestamp and default values for optional fields
+      const [trip] = await db
+        .insert(trips)
+        .values({
+          ...insertTrip,
+          timestamp: new Date(),
+          location: insertTrip.location || null,
+          note: insertTrip.note || null
+        })
+        .returning();
+      
+      console.log("Trip created successfully:", trip);
+      return trip;
+    } catch (error) {
+      console.error("Error creating trip:", error);
+      throw error;
     }
-    return undefined;
   }
 
+  // Get trip by ID
+  async getTrip(id: number): Promise<Trip | undefined> {
+    try {
+      const [trip] = await db.select().from(trips).where(eq(trips.id, id));
+      return trip;
+    } catch (error) {
+      console.error("Error getting trip by ID:", error);
+      return undefined;
+    }
+  }
+
+  // Get trips by rider ID
+  async getTripsByRiderId(riderId: string): Promise<Trip[]> {
+    try {
+      return await db
+        .select()
+        .from(trips)
+        .where(eq(trips.riderId, riderId))
+        .orderBy(desc(trips.timestamp));
+    } catch (error) {
+      console.error("Error getting trips by rider ID:", error);
+      return [];
+    }
+  }
+
+  // Get trips by driver ID
+  async getTripsByDriverId(driverId: number): Promise<Trip[]> {
+    try {
+      return await db
+        .select()
+        .from(trips)
+        .where(eq(trips.driverId, driverId))
+        .orderBy(desc(trips.timestamp));
+    } catch (error) {
+      console.error("Error getting trips by driver ID:", error);
+      return [];
+    }
+  }
+
+  // Mark a trip as completed
+  async completeTrip(id: number): Promise<Trip | undefined> {
+    try {
+      const [trip] = await db
+        .update(trips)
+        .set({ completed: true })
+        .where(eq(trips.id, id))
+        .returning();
+      
+      return trip;
+    } catch (error) {
+      console.error("Error completing trip:", error);
+      return undefined;
+    }
+  }
+
+  // List recent trips with optional limit
   async listRecentTrips(limit: number = 10): Promise<Trip[]> {
-    return Array.from(this.trips.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
+    try {
+      return await db
+        .select()
+        .from(trips)
+        .orderBy(desc(trips.timestamp))
+        .limit(limit);
+    } catch (error) {
+      console.error("Error listing recent trips:", error);
+      return [];
+    }
   }
 }
 
-export const storage = new MemStorage();
+// Create and export the storage instance
+export const storage = new DatabaseStorage();

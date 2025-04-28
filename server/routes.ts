@@ -1,11 +1,11 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertTripSchema, loginSchema } from "@shared/schema";
+import { insertUserSchema, insertTripSchema, loginSchema, checkInSchema } from "@shared/schema";
 import express from "express";
 import session from "express-session";
 import { ZodError } from "zod";
-import MemoryStore from "memorystore";
+import { WebSocketServer } from "ws";
 
 // Extend the Express session with our custom properties
 declare module 'express-session' {
@@ -16,43 +16,39 @@ declare module 'express-session' {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup session
-  const SessionStore = MemoryStore(session);
+  // Set up database first
+  await storage.setupDatabase();
+  
+  // Setup session with PostgreSQL store
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "bus-tracker-secret",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
-      store: new SessionStore({
-        checkPeriod: 86400000, // prune expired entries every 24h
-      }),
+      cookie: { 
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      },
+      store: storage.sessionStore
     })
   );
 
   // Authentication middleware
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
-    console.log("Authentication check:", {
-      sessionId: req.session.id,
-      userId: req.session.userId,
-      userType: req.session.userType,
-      path: req.path,
-      method: req.method
-    });
-    
     if (!req.session.userId) {
-      console.log("Authentication failed: No userId in session");
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
   };
 
-  // Auth routes
+  // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
+      // Validate login data
       const data = loginSchema.parse(req.body);
       const user = await storage.getUserByUsername(data.username);
       
+      // Check credentials
       if (!user || user.password !== data.password || user.userType !== data.userType) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -64,16 +60,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("User logged in successfully", { 
         userId: user.id,
         userType: user.userType,
-        riderId: user.riderId,
-        sessionId: req.session.id
+        riderId: user.riderId
       });
       
-      // Remove password from response
+      // Return user data (without password)
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
+      console.error("Login error:", error);
       if (error instanceof ZodError) {
-        return res.status(400).json({ message: error.errors });
+        return res.status(400).json({ message: "Invalid login data", errors: error.errors });
       }
       return res.status(500).json({ message: "Internal server error" });
     }
@@ -82,6 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) {
+        console.error("Logout error:", err);
         return res.status(500).json({ message: "Failed to logout" });
       }
       res.clearCookie("connect.sid");
@@ -101,26 +98,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
       
-      // Remove password from response
+      // Return user data (without password)
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
+      console.error("Authentication check error:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
 
-  // User routes
+  // User management routes
   app.post("/api/users", async (req, res) => {
     try {
+      // Validate user data
       const userData = insertUserSchema.parse(req.body);
       
-      // Check if username already exists
+      // Check for existing username
       const existingUser = await storage.getUserByUsername(userData.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
       
-      // Check if rider ID exists (for riders only)
+      // Check for existing rider ID
       if (userData.userType === "rider" && userData.riderId) {
         const existingRider = await storage.getUserByRiderId(userData.riderId);
         if (existingRider) {
@@ -128,14 +127,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Create the user
       const user = await storage.createUser(userData);
       
-      // Remove password from response
+      // Return user data (without password)
       const { password, ...safeUser } = user;
       return res.status(201).json(safeUser);
     } catch (error) {
+      console.error("User creation error:", error);
       if (error instanceof ZodError) {
-        return res.status(400).json({ message: error.errors });
+        return res.status(400).json({ message: "Invalid user data", errors: error.errors });
       }
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
@@ -157,38 +158,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(safeUsers);
     } catch (error) {
+      console.error("Error listing users:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
 
   app.get("/api/users/by-rider-id/:riderId", authenticateUser, async (req, res) => {
     try {
-      console.log("Looking up rider by ID:", req.params.riderId, {
-        userId: req.session.userId,
-        userType: req.session.userType
-      });
-      
       // Only drivers should look up riders
       if (req.session.userType !== "driver") {
-        console.log("Access warning: Non-driver looking up rider", { userType: req.session.userType });
+        return res.status(403).json({ message: "Only drivers can look up riders" });
       }
       
       const { riderId } = req.params;
       if (!riderId || typeof riderId !== 'string') {
-        console.log("Invalid rider ID format:", riderId);
         return res.status(400).json({ message: "Invalid rider ID" });
       }
 
+      // Find the rider
       const user = await storage.getUserByRiderId(riderId);
-      
       if (!user) {
-        console.log("Rider not found:", riderId);
         return res.status(404).json({ message: "Rider not found" });
       }
       
-      console.log("Rider found:", { riderId, name: user.name });
-      
-      // Remove password from response
+      // Return rider data (without password)
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
@@ -197,144 +190,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Trip routes
+  // Trip management routes
   app.post("/api/check-in", authenticateUser, async (req, res) => {
     try {
-      console.log("Check-in request received", {
-        body: req.body,
-        session: {
-          userId: req.session.userId,
-          userType: req.session.userType
-        }
-      });
+      // Validate check-in data
+      const data = checkInSchema.parse(req.body);
       
       // Only drivers can check in riders
       if (req.session.userType !== "driver") {
-        console.log("Check-in failed: Not a driver", { userType: req.session.userType });
         return res.status(403).json({ message: "Only drivers can check in riders" });
       }
       
-      const { riderId, location, note } = req.body;
-      
-      if (!riderId) {
-        console.log("Check-in failed: No rider ID provided");
-        return res.status(400).json({ message: "Rider ID is required" });
-      }
-      
-      // Verify that the rider exists
-      const rider = await storage.getUserByRiderId(riderId);
+      // Make sure the rider exists
+      const rider = await storage.getUserByRiderId(data.riderId);
       if (!rider) {
-        console.log("Check-in failed: Rider not found", { riderId });
         return res.status(404).json({ message: "Rider not found" });
       }
       
-      console.log("Rider found, creating trip", { 
-        riderId: rider.riderId, 
-        name: rider.name,
-        driverId: req.session.userId 
-      });
+      // Create the trip record
+      const tripData = {
+        riderId: data.riderId,
+        driverId: req.session.userId!,
+        location: data.location,
+        note: data.note || null
+      };
       
-      // Create the trip without validation (simplified approach)
-      try {
-        // Create a trip directly
-        const tripData = {
-          riderId,
-          driverId: req.session.userId || 0,
-          location: location || null,
-          note: note || null
-        };
-        
-        console.log("Creating trip with data:", tripData);
-        
-        // Create the trip
-        const trip = await storage.createTrip(tripData);
-        console.log("Check-in successful, trip created", { tripId: trip.id });
-        
-        // Return the created trip
-        return res.status(201).json(trip);
-      } catch (error) {
-        console.error("Failed to create trip:", error);
-        return res.status(500).json({ message: "Failed to create trip" });
-      }
+      const trip = await storage.createTrip(tripData);
+      console.log("Check-in successful, trip created", { tripId: trip.id });
+      
+      return res.status(201).json(trip);
     } catch (error) {
-      console.error("Check-in failed with error:", error);
+      console.error("Check-in error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid check-in data", errors: error.errors });
+      }
       return res.status(500).json({ message: "Internal server error" });
     }
   });
   
+  // Simplified trip creation endpoint
   app.post("/api/trips", authenticateUser, async (req, res) => {
     try {
-      console.log("Trip creation request received", {
-        body: req.body,
-        session: {
-          userId: req.session.userId,
-          userType: req.session.userType
-        }
-      });
-      
       // Only drivers can create trips
       if (req.session.userType !== "driver") {
-        console.log("Trip creation failed: Not a driver", { userType: req.session.userType });
         return res.status(403).json({ message: "Only drivers can create trips" });
       }
       
       const { riderId, location, note } = req.body;
       
       if (!riderId) {
-        console.log("Trip creation failed: No rider ID provided");
         return res.status(400).json({ message: "Rider ID is required" });
       }
       
-      // Verify that the rider exists
+      // Check if rider exists
       const rider = await storage.getUserByRiderId(riderId);
       if (!rider) {
-        console.log("Trip creation failed: Rider not found", { riderId });
         return res.status(404).json({ message: "Rider not found" });
       }
       
-      // Create a trip directly without validation
+      // Create the trip with minimal validation
       const tripData = {
         riderId,
-        driverId: req.session.userId || 0,
-        location: location || null,
+        driverId: req.session.userId!,
+        location: location || "Unknown location",
         note: note || null
       };
       
       console.log("Creating trip with data:", tripData);
       
-      try {
-        const trip = await storage.createTrip(tripData);
-        console.log("Trip created successfully", { tripId: trip.id });
-        return res.status(201).json(trip);
-      } catch (error) {
-        console.error("Failed to create trip:", error);
-        return res.status(500).json({ message: "Failed to create trip" });
-      }
+      const trip = await storage.createTrip(tripData);
+      console.log("Trip created successfully", { tripId: trip.id });
+      return res.status(201).json(trip);
     } catch (error) {
-      console.error("Trip creation failed with error:", error);
-      return res.status(500).json({ message: "Internal server error" });
+      console.error("Trip creation error:", error);
+      return res.status(500).json({ message: "Failed to create trip" });
     }
   });
 
   app.get("/api/trips", authenticateUser, async (req, res) => {
     try {
-      console.log("Getting trips for user", {
-        userId: req.session.userId,
-        userType: req.session.userType
-      });
+      let trips = [];
       
-      let trips: any[] = [];
-      
+      // Get trips based on user type
       if (req.session.userType === "driver") {
         trips = await storage.getTripsByDriverId(req.session.userId!);
-        console.log(`Found ${trips.length} trips for driver ${req.session.userId}`);
       } else if (req.session.userType === "rider") {
         const user = await storage.getUser(req.session.userId!);
-        if (user && user.riderId) {
+        if (user?.riderId) {
           trips = await storage.getTripsByRiderId(user.riderId);
-          console.log(`Found ${trips.length} trips for rider ${user.riderId}`);
-        } else {
-          console.log("No riderId found for user", req.session.userId);
         }
       }
       
@@ -347,20 +290,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/trips/recent", authenticateUser, async (req, res) => {
     try {
-      console.log("Getting recent trips", {
-        userId: req.session.userId,
-        userType: req.session.userType
-      });
-      
       // Only drivers can see all recent trips
       if (req.session.userType !== "driver") {
-        console.log("Access denied: not a driver", { userType: req.session.userType });
         return res.status(403).json({ message: "Access denied" });
       }
       
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const trips: any[] = await storage.listRecentTrips(limit);
-      console.log(`Found ${trips.length} recent trips`);
+      const trips = await storage.listRecentTrips(limit);
       return res.status(200).json(trips);
     } catch (error) {
       console.error("Error fetching recent trips:", error);
@@ -384,10 +320,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(trip);
     } catch (error) {
+      console.error("Error completing trip:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
 
+  // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Create WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    ws.on('message', (message) => {
+      console.log('Received message:', message.toString());
+    });
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+    });
+  });
+
   return httpServer;
 }
