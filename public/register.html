@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Bus Tracker</title>
+  <title>Register - Bus Tracker</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -13,7 +13,7 @@
       color: #333;
     }
     .container {
-      max-width: 400px;
+      max-width: 500px;
       margin: 0 auto;
       background: white;
       border-radius: 8px;
@@ -46,6 +46,14 @@
       font-size: 16px;
       box-sizing: border-box;
     }
+    .rider-id-field {
+      display: none;
+    }
+    .rider-id-hint {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 5px;
+    }
     button {
       background-color: #2563eb;
       color: white;
@@ -70,25 +78,16 @@
       margin-top: 20px;
       display: none;
     }
-    .success-message {
-      background-color: #dcfce7;
-      border: 1px solid #86efac;
-      color: #166534;
-      padding: 15px;
-      border-radius: 4px;
-      margin-top: 20px;
-      display: none;
-    }
-    .register-link {
+    .login-link {
       text-align: center;
       margin-top: 20px;
       font-size: 14px;
     }
-    .register-link a {
+    .login-link a {
       color: #2563eb;
       text-decoration: none;
     }
-    .register-link a:hover {
+    .login-link a:hover {
       text-decoration: underline;
     }
   </style>
@@ -96,9 +95,9 @@
 <body>
   <div class="container">
     <div class="logo">🚌</div>
-    <h1>Login</h1>
+    <h1>Register</h1>
     
-    <form id="login-form">
+    <form id="register-form">
       <div class="form-group">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
@@ -110,6 +109,11 @@
       </div>
       
       <div class="form-group">
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      
+      <div class="form-group">
         <label for="userType">Account Type:</label>
         <select id="userType" name="userType" required>
           <option value="rider">Rider</option>
@@ -117,80 +121,97 @@
         </select>
       </div>
       
-      <button type="submit">Login</button>
+      <div class="form-group rider-id-field" id="rider-id-container">
+        <label for="riderId">Your 5-Digit Rider ID:</label>
+        <input type="text" id="riderId" name="riderId" maxlength="5" pattern="[0-9]{5}" title="Please enter a 5-digit number">
+        <div class="rider-id-hint">Choose a unique 5-digit number that will be used for check-ins. This cannot be changed later.</div>
+      </div>
+      
+      <button type="submit">Register</button>
     </form>
     
     <div id="error-message" class="error-message"></div>
-    <div id="success-message" class="success-message"></div>
     
-    <div class="register-link">
-      Don't have an account? <a href="/register">Register</a>
+    <div class="login-link">
+      Already have an account? <a href="/login">Login</a>
     </div>
   </div>
   
   <script>
     // DOM Elements
-    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const userTypeSelect = document.getElementById('userType');
+    const riderIdContainer = document.getElementById('rider-id-container');
     const errorMessage = document.getElementById('error-message');
-    const successMessage = document.getElementById('success-message');
     
-    // Check if redirected from successful registration
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('registered') === 'true') {
-      successMessage.textContent = 'Registration successful! Please log in with your new account.';
-      successMessage.style.display = 'block';
+    // Show/hide rider ID field based on user type
+    userTypeSelect.addEventListener('change', function() {
+      if (this.value === 'rider') {
+        riderIdContainer.style.display = 'block';
+        document.getElementById('riderId').required = true;
+      } else {
+        riderIdContainer.style.display = 'none';
+        document.getElementById('riderId').required = false;
+      }
+    });
+    
+    // Set initial state
+    if (userTypeSelect.value === 'rider') {
+      riderIdContainer.style.display = 'block';
+      document.getElementById('riderId').required = true;
     }
     
     // Handle form submission
-    loginForm.addEventListener('submit', async function(e) {
+    registerForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      // Hide messages
+      // Hide previous error messages
       errorMessage.style.display = 'none';
-      successMessage.style.display = 'none';
       
       // Get form data
-      const formData = new FormData(loginForm);
-      const loginData = {
+      const formData = new FormData(registerForm);
+      const userData = {
         username: formData.get('username'),
         password: formData.get('password'),
-        userType: formData.get('userType')
+        name: formData.get('name'),
+        userType: formData.get('userType'),
+        riderId: formData.get('userType') === 'rider' ? formData.get('riderId') : null
       };
       
+      // Validate rider ID if the user is a rider
+      if (userData.userType === 'rider') {
+        if (!userData.riderId || userData.riderId.length !== 5 || !/^\d+$/.test(userData.riderId)) {
+          errorMessage.textContent = 'Please enter a valid 5-digit Rider ID number';
+          errorMessage.style.display = 'block';
+          return;
+        }
+      }
+      
       try {
-        // Send login request
-        const response = await fetch('/api/auth/login', {
+        // Send registration request
+        const response = await fetch('/api/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(loginData),
-          credentials: 'include'
+          body: JSON.stringify(userData)
         });
         
         if (response.ok) {
-          // Login successful
-          const user = await response.json();
-          console.log('Login successful:', user);
-          
-          // Redirect based on user type
-          if (user.userType === 'rider') {
-            window.location.href = '/rider-dashboard';
-          } else if (user.userType === 'driver') {
-            window.location.href = '/driver-checkin';
-          } else {
-            window.location.href = '/';
-          }
+          // Registration successful, redirect to login
+          const data = await response.json();
+          console.log('Registration successful:', data);
+          window.location.href = '/login?registered=true';
         } else {
-          // Login failed
+          // Registration failed
           const error = await response.json();
-          console.error('Login error:', error);
-          errorMessage.textContent = error.message || 'Login failed. Please check your credentials and try again.';
+          console.error('Registration error:', error);
+          errorMessage.textContent = error.message || 'Registration failed. Please try again.';
           errorMessage.style.display = 'block';
         }
       } catch (error) {
         console.error('Error:', error);
-        errorMessage.textContent = 'An error occurred during login. Please try again.';
+        errorMessage.textContent = 'An error occurred during registration. Please try again.';
         errorMessage.style.display = 'block';
       }
     });

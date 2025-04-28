@@ -382,9 +382,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('login.html', { root: './public' });
   });
   
-  // Direct check-in page
+  // Registration page
+  app.get('/register', (req, res) => {
+    res.sendFile('register.html', { root: './public' });
+  });
+  
+  // Direct check-in page (no auth required)
   app.get('/check-in', (req, res) => {
     res.sendFile('direct-checkin.html', { root: './public' });
+  });
+  
+  // Rider dashboard page
+  app.get('/rider-dashboard', (req, res) => {
+    res.sendFile('rider-dashboard.html', { root: './public' });
+  });
+  
+  // Driver check-in page with QR scanner
+  app.get('/driver-checkin', (req, res) => {
+    res.sendFile('driver-checkin.html', { root: './public' });
   });
   
   // Create HTTP server
