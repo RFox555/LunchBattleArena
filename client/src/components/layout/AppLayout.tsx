@@ -40,6 +40,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     ? [
         { name: "Dashboard", href: "/driver", icon: Home },
         { name: "Check-In Rider", href: "/driver/scan", icon: QrCode },
+        { name: "Test Check-In", href: "/driver/test-check-in", icon: QrCode },
         { name: "History", href: "/driver/history", icon: ClipboardList },
       ]
     : [
