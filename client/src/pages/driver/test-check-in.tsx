@@ -1,23 +1,46 @@
 import { useState } from "react";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 export default function TestCheckIn() {
-  const [riderId, setRiderId] = useState("");
-  const [location, setLocation] = useState("");
-  const [note, setNote] = useState("");
+  const { user } = useAuth();
+  const [riderId, setRiderId] = useState("12345"); // Pre-filled with test data
+  const [location, setLocation] = useState("Downtown Bus Stop");
+  const [note, setNote] = useState("Test check-in");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [tripId, setTripId] = useState<number | null>(null);
+  
+  // Direct function to create a trip (bypasses the check-in API)
+  const handleCreateTripDirectly = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
     setError("");
+    
+    if (!user || !user.id) {
+      setError("You must be logged in as a driver");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      console.log("Sending check-in data:", { riderId, location, note });
+      console.log("Creating trip directly:", { 
+        riderId, 
+        location, 
+        note,
+        driverId: user.id
+      });
       
-      const response = await fetch("/api/check-in", {
+      // Use the trips endpoint directly
+      const response = await fetch("/api/trips", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -26,97 +49,122 @@ export default function TestCheckIn() {
           riderId,
           location,
           note,
+          // Driver ID comes from session
         }),
         credentials: "include",
       });
 
-      console.log("Raw response:", response);
+      const responseText = await response.text();
+      console.log(`Response (${response.status}):`, responseText);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Check-in error:", errorText);
-        throw new Error(`Check-in failed: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to create trip: ${response.status} - ${responseText}`);
       }
 
-      const data = await response.json();
-      console.log("Check-in success:", data);
-      setMessage("Check-in successful! Trip created.");
-      
-      // Clear form
-      setRiderId("");
-      setLocation("");
-      setNote("");
+      try {
+        const data = JSON.parse(responseText);
+        console.log("Trip created successfully:", data);
+        setMessage(`Trip created with ID: ${data.id}`);
+        setTripId(data.id);
+      } catch (e) {
+        console.log("Response wasn't JSON but trip was created");
+        setMessage("Trip created successfully!");
+      }
     } catch (err) {
-      console.error("Check-in failed:", err);
-      setError(err instanceof Error ? err.message : "Check-in failed");
+      console.error("Error creating trip:", err);
+      setError(err instanceof Error ? err.message : "Failed to create trip");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-6 mt-10">
-      <h1 className="text-2xl font-bold mb-4">Test Check-In Page</h1>
-      <p className="text-gray-600 mb-4">
-        This is a simple test page to check if the check-in API is working.
-      </p>
-
-      {message && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {message}
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
         <div>
-          <label className="block text-gray-700 mb-2">Rider ID</label>
-          <input
-            type="text"
-            value={riderId}
-            onChange={(e) => setRiderId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Enter 5-digit ID"
-            required
-          />
+          <h1 className="text-2xl font-bold">Direct Trip Creation</h1>
+          <p className="text-muted-foreground">
+            Create a trip directly without using the check-in API.
+          </p>
         </div>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Create a Trip Directly</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {message && (
+            <Alert className="mb-6 bg-green-50 border-green-200">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">Success</AlertTitle>
+              <AlertDescription className="text-green-700">
+                {message}
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <div>
-          <label className="block text-gray-700 mb-2">Location</label>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Current location"
-            required
-          />
-        </div>
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <div>
-          <label className="block text-gray-700 mb-2">Note (Optional)</label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Additional notes"
-            rows={3}
-          />
-        </div>
+          <form onSubmit={handleCreateTripDirectly} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="riderId">Rider ID</Label>
+              <Input
+                id="riderId"
+                value={riderId}
+                onChange={(e) => setRiderId(e.target.value)}
+                placeholder="5-digit ID"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the rider's 5-digit ID (e.g., 12345)
+              </p>
+            </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          {isLoading ? "Processing..." : "Check In"}
-        </button>
-      </form>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Current location"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="note">Note (Optional)</Label>
+              <Textarea
+                id="note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Additional details"
+                rows={3}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Creating Trip..." : "Create Trip"}
+            </Button>
+          </form>
+          
+          {tripId && (
+            <div className="mt-6 p-4 border border-green-300 bg-green-50 rounded-lg">
+              <h3 className="font-medium text-green-800">Trip Details</h3>
+              <p className="text-green-700">Trip ID: {tripId}</p>
+              <p className="text-green-700">Rider ID: {riderId}</p>
+              <p className="text-green-700">Location: {location}</p>
+              {note && <p className="text-green-700">Note: {note}</p>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
