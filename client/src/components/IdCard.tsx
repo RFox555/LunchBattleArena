@@ -6,7 +6,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatRiderId } from "@/lib/utils";
-import { User, QrCode } from "lucide-react";
+import { User } from "lucide-react";
+import { QRCode } from "react-qrcode-logo";
 
 interface IdCardProps {
   user: any;
@@ -44,7 +45,15 @@ export default function IdCard({ user }: IdCardProps) {
             <div className="flex flex-col items-center">
               <div className="bg-white p-4 rounded-lg mb-2 shadow-sm">
                 <div className="flex justify-center items-center">
-                  <QrCode className="h-12 w-12 text-primary" />
+                  <QRCodeSVG 
+                    value={user.riderId}
+                    size={120}
+                    bgColor={"#FFFFFF"}
+                    fgColor={"#000000"}
+                    level={"H"}
+                    includeMargin={false}
+                    qrStyle={"squares"}
+                  />
                 </div>
               </div>
               <h2 className="text-4xl font-bold tracking-wider text-center">
