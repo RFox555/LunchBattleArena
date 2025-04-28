@@ -179,6 +179,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Trip routes
+  app.post("/api/check-in", authenticateUser, async (req, res) => {
+    try {
+      console.log("Check-in request received", {
+        body: req.body,
+        session: {
+          userId: req.session.userId,
+          userType: req.session.userType
+        }
+      });
+      
+      // Only drivers can check in riders
+      if (req.session.userType !== "driver") {
+        console.log("Check-in failed: Not a driver", { userType: req.session.userType });
+        return res.status(403).json({ message: "Only drivers can check in riders" });
+      }
+      
+      const { riderId, location, note } = req.body;
+      
+      if (!riderId) {
+        return res.status(400).json({ message: "Rider ID is required" });
+      }
+      
+      // Verify that the rider exists
+      const rider = await storage.getUserByRiderId(riderId);
+      if (!rider) {
+        console.log("Check-in failed: Rider not found", { riderId });
+        return res.status(404).json({ message: "Rider not found" });
+      }
+      
+      console.log("Rider found, creating trip", { 
+        riderId: rider.riderId, 
+        name: rider.name,
+        driverId: req.session.userId 
+      });
+      
+      const trip = await storage.createTrip({
+        riderId,
+        driverId: req.session.userId!,
+        location: location || null,
+        note: note || null
+      });
+      
+      console.log("Check-in successful, trip created", { tripId: trip.id });
+      return res.status(201).json(trip);
+    } catch (error) {
+      console.error("Check-in failed with error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   app.post("/api/trips", authenticateUser, async (req, res) => {
     try {
       console.log("Trip creation request received", {
@@ -228,34 +281,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/trips", authenticateUser, async (req, res) => {
     try {
-      let trips = [];
+      console.log("Getting trips for user", {
+        userId: req.session.userId,
+        userType: req.session.userType
+      });
+      
+      let trips: any[] = [];
       
       if (req.session.userType === "driver") {
         trips = await storage.getTripsByDriverId(req.session.userId!);
+        console.log(`Found ${trips.length} trips for driver ${req.session.userId}`);
       } else if (req.session.userType === "rider") {
         const user = await storage.getUser(req.session.userId!);
         if (user && user.riderId) {
           trips = await storage.getTripsByRiderId(user.riderId);
+          console.log(`Found ${trips.length} trips for rider ${user.riderId}`);
+        } else {
+          console.log("No riderId found for user", req.session.userId);
         }
       }
       
       return res.status(200).json(trips);
     } catch (error) {
+      console.error("Error fetching trips:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
 
   app.get("/api/trips/recent", authenticateUser, async (req, res) => {
     try {
+      console.log("Getting recent trips", {
+        userId: req.session.userId,
+        userType: req.session.userType
+      });
+      
       // Only drivers can see all recent trips
       if (req.session.userType !== "driver") {
+        console.log("Access denied: not a driver", { userType: req.session.userType });
         return res.status(403).json({ message: "Access denied" });
       }
       
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const trips = await storage.listRecentTrips(limit);
+      const trips: any[] = await storage.listRecentTrips(limit);
+      console.log(`Found ${trips.length} recent trips`);
       return res.status(200).json(trips);
     } catch (error) {
+      console.error("Error fetching recent trips:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });

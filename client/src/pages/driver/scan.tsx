@@ -83,7 +83,8 @@ export default function DriverScan() {
     mutationFn: async (data: { riderId: string; location: string; note?: string }) => {
       console.log("Sending check-in data:", data);
       try {
-        const res = await apiRequest("POST", "/api/trips", data);
+        // Use the dedicated check-in endpoint
+        const res = await apiRequest("POST", "/api/check-in", data);
         console.log("Check-in response status:", res.status);
         return res.json();
       } catch (error) {
@@ -145,13 +146,32 @@ export default function DriverScan() {
   };
 
   const handleCheckIn = (data: { location: string; note?: string }) => {
-    if (!riderId) return;
+    if (!riderId) {
+      console.error("Check-in failed: No rider ID provided");
+      toast({
+        variant: "destructive",
+        title: "Check-in failed",
+        description: "No rider ID was provided. Please search for a rider first.",
+      });
+      return;
+    }
     
-    checkInMutation.mutate({
+    console.log("Attempting to check in rider", {
       riderId,
+      riderData: rider,
       location: data.location,
-      note: data.note || "",
+      note: data.note
     });
+    
+    try {
+      checkInMutation.mutate({
+        riderId,
+        location: data.location,
+        note: data.note || "",
+      });
+    } catch (error) {
+      console.error("Error initiating check-in mutation:", error);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
