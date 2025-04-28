@@ -23,7 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Bus } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Bus, AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(3, {
@@ -40,6 +41,7 @@ export default function Login() {
   const [activeTab, setActiveTab] = useState<"driver" | "rider">("driver");
   const { login, isLoading } = useAuth();
   const { toast } = useToast();
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -50,10 +52,12 @@ export default function Login() {
   });
 
   const onSubmit = async (data: FormData) => {
+    setLoginError(null);
     try {
       await login(data.username, data.password, activeTab);
     } catch (error) {
       console.error("Login error:", error);
+      setLoginError("Invalid username or password. Please check your credentials and try again.");
     }
   };
 
@@ -70,6 +74,14 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {loginError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Login Error</AlertTitle>
+              <AlertDescription>{loginError}</AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs
             defaultValue="driver"
             value={activeTab}
@@ -172,8 +184,11 @@ export default function Login() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex flex-col">
-          <p className="text-xs text-center text-muted-foreground mt-4">
+        <CardFooter className="flex flex-col items-center space-y-2">
+          <Button variant="link" onClick={() => window.location.href = "/register"}>
+            Don't have an account? Register here
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
             Bus Tracking System for Riders and Drivers
           </p>
         </CardFooter>

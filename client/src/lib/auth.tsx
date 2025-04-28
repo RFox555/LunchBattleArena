@@ -54,7 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string, userType: "driver" | "rider") => {
     setIsLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/auth/login", { username, password, userType });
+      // Use fetch directly instead of apiRequest to handle 401 responses
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, userType }),
+        credentials: "include"
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Invalid credentials" }));
+        throw new Error(errorData.message || "Failed to login");
+      }
+      
       const userData = await res.json();
       setUser(userData);
       

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./lib/auth.tsx";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
+import Register from "@/pages/register";
 import DriverDashboard from "@/pages/driver/dashboard";
 import DriverScan from "@/pages/driver/scan";
 import DriverHistory from "@/pages/driver/history";
@@ -22,6 +23,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       
       {/* Protected Driver Routes */}
       <Route path="/driver">

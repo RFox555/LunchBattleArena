@@ -96,6 +96,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username already exists" });
       }
       
+      // Check if rider ID exists (for riders only)
+      if (userData.userType === "rider" && userData.riderId) {
+        const existingRider = await storage.getUserByRiderId(userData.riderId);
+        if (existingRider) {
+          return res.status(400).json({ message: "This Rider ID is already in use. Please choose another one." });
+        }
+      }
+      
       const user = await storage.createUser(userData);
       
       // Remove password from response
@@ -104,6 +112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ message: error.errors });
+      }
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
       }
       return res.status(500).json({ message: "Internal server error" });
     }
