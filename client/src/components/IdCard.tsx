@@ -45,14 +45,12 @@ export default function IdCard({ user }: IdCardProps) {
             <div className="flex flex-col items-center">
               <div className="bg-white p-4 rounded-lg mb-2 shadow-sm">
                 <div className="flex justify-center items-center">
-                  <QRCodeSVG 
+                  <QRCode 
                     value={user.riderId}
-                    size={120}
-                    bgColor={"#FFFFFF"}
-                    fgColor={"#000000"}
-                    level={"H"}
-                    includeMargin={false}
-                    qrStyle={"squares"}
+                    size={120} 
+                    logoImage=""
+                    removeQrCodeBehindLogo={false}
+                    eyeRadius={5}
                   />
                 </div>
               </div>

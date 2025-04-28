@@ -72,7 +72,7 @@ export default function DriverScan() {
 
   // Check-in mutation
   const checkInMutation = useMutation({
-    mutationFn: async (data: { riderId: string; location: string; note: string }) => {
+    mutationFn: async (data: { riderId: string; location: string; note?: string }) => {
       const res = await apiRequest("POST", "/api/trips", data);
       return res.json();
     },
@@ -115,13 +115,13 @@ export default function DriverScan() {
     }
   };
 
-  const handleCheckIn = (data: { location: string; note: string }) => {
+  const handleCheckIn = (data: { location: string; note?: string }) => {
     if (!riderId) return;
     
     checkInMutation.mutate({
       riderId,
       location: data.location,
-      note: data.note,
+      note: data.note || "",
     });
   };
 
