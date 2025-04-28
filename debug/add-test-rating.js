@@ -1,6 +1,6 @@
 // Script to add a test rating
-const { db } = require('../server/db');
-const { busRatings } = require('../shared/schema');
+import { db } from '../server/db.js';
+import { busRatings } from '../shared/schema.js';
 
 async function addTestRating() {
   try {
