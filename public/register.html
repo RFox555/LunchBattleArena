@@ -46,10 +46,10 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-    .rider-id-field {
+    .employee-id-field {
       display: none;
     }
-    .rider-id-hint {
+    .employee-id-hint {
       font-size: 14px;
       color: #6b7280;
       margin-top: 5px;
@@ -121,10 +121,10 @@
         </select>
       </div>
       
-      <div class="form-group rider-id-field" id="rider-id-container">
+      <div class="form-group employee-id-field" id="employee-id-container">
         <label for="riderId">Your 5-Digit Employee ID:</label>
         <input type="text" id="riderId" name="riderId" maxlength="5" pattern="[0-9]{5}" title="Please enter a 5-digit number">
-        <div class="rider-id-hint">Choose a unique 5-digit number that will be used for check-ins. This cannot be changed later.</div>
+        <div class="employee-id-hint">Choose a unique 5-digit number that will be used for check-ins. This cannot be changed later.</div>
       </div>
       
       <button type="submit">Register</button>
@@ -141,23 +141,23 @@
     // DOM Elements
     const registerForm = document.getElementById('register-form');
     const userTypeSelect = document.getElementById('userType');
-    const riderIdContainer = document.getElementById('rider-id-container');
+    const employeeIdContainer = document.getElementById('rider-id-container');
     const errorMessage = document.getElementById('error-message');
     
-    // Show/hide rider ID field based on user type
+    // Show/hide employee ID field based on user type (database field is still 'rider')
     userTypeSelect.addEventListener('change', function() {
       if (this.value === 'rider') {
-        riderIdContainer.style.display = 'block';
+        employeeIdContainer.style.display = 'block';
         document.getElementById('riderId').required = true;
       } else {
-        riderIdContainer.style.display = 'none';
+        employeeIdContainer.style.display = 'none';
         document.getElementById('riderId').required = false;
       }
     });
     
     // Set initial state
     if (userTypeSelect.value === 'rider') {
-      riderIdContainer.style.display = 'block';
+      employeeIdContainer.style.display = 'block';
       document.getElementById('riderId').required = true;
     }
     
@@ -178,7 +178,7 @@
         riderId: formData.get('userType') === 'rider' ? formData.get('riderId') : null
       };
       
-      // Validate employee ID if the user is an employee
+      // Validate employee ID if the user is an employee (stored as 'rider' in database)
       if (userData.userType === 'rider') {
         if (!userData.riderId || userData.riderId.length !== 5 || !/^\d+$/.test(userData.riderId)) {
           errorMessage.textContent = 'Please enter a valid 5-digit Employee ID number';
