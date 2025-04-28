@@ -392,9 +392,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('direct-checkin.html', { root: './public' });
   });
   
-  // Rider dashboard page
+  // Employee dashboard page
+  app.get('/employee-dashboard', (req, res) => {
+    res.sendFile('employee-dashboard.html', { root: './public' });
+  });
+  
+  // Backward compatibility - redirect old rider URL to employee dashboard
   app.get('/rider-dashboard', (req, res) => {
-    res.sendFile('rider-dashboard.html', { root: './public' });
+    res.redirect('/employee-dashboard');
   });
   
   // Driver check-in page with QR scanner
