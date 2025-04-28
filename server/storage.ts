@@ -32,6 +32,69 @@ export class MemStorage implements IStorage {
     this.riderIds = new Set();
     this.userCurrentId = 1;
     this.tripCurrentId = 1;
+    
+    // Add test users
+    this.initializeTestData();
+  }
+  
+  private initializeTestData() {
+    // Create a test driver
+    const driver = {
+      id: this.userCurrentId++,
+      username: "driver1",
+      password: "password123",
+      name: "John Driver",
+      userType: "driver",
+      riderId: null,
+      isActive: true,
+      createdAt: new Date()
+    } as User;
+    
+    // Create a test rider
+    const rider = {
+      id: this.userCurrentId++,
+      username: "rider1",
+      password: "password123",
+      name: "Jane Rider",
+      userType: "rider",
+      riderId: "12345",
+      isActive: true,
+      createdAt: new Date()
+    } as User;
+    
+    // Add users to the storage
+    this.users.set(driver.id, driver);
+    this.users.set(rider.id, rider);
+    
+    // Register the rider ID
+    if (rider.riderId) {
+      this.riderIds.add(rider.riderId);
+    }
+    
+    // Create some test trips
+    const trip1 = {
+      id: this.tripCurrentId++,
+      driverId: driver.id,
+      riderId: rider.riderId!,
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
+      location: "Main Street Bus Stop",
+      note: "Morning commute",
+      completed: true
+    } as Trip;
+    
+    const trip2 = {
+      id: this.tripCurrentId++,
+      driverId: driver.id,
+      riderId: rider.riderId!,
+      timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
+      location: "Downtown Transit Center",
+      note: "Afternoon return",
+      completed: true
+    } as Trip;
+    
+    // Add trips to storage
+    this.trips.set(trip1.id, trip1);
+    this.trips.set(trip2.id, trip2);
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -100,6 +163,8 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(),
       completed: false,
+      location: insertTrip.location || null,
+      note: insertTrip.note || null
     };
     
     this.trips.set(id, trip);
