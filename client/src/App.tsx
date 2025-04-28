@@ -10,9 +10,7 @@ import Register from "@/pages/register";
 import DriverDashboard from "@/pages/driver/dashboard";
 import DriverScan from "@/pages/driver/scan";
 import DriverHistory from "@/pages/driver/history";
-import TestCheckIn from "@/pages/driver/test-check-in";
-import QuickCheckIn from "@/pages/driver/quick-check-in";
-import HtmlCheckIn from "@/pages/driver/html-check-in";
+import CheckIn from "@/pages/driver/check-in";
 import RiderDashboard from "@/pages/rider/dashboard";
 import RiderHistory from "@/pages/rider/history";
 import AuthRoute from "@/components/layout/AuthLayout";
@@ -35,11 +33,9 @@ function AppRoutes() {
             <AppLayout>
               <Switch>
                 <Route path="/driver" component={DriverDashboard} />
+                <Route path="/driver/check-in" component={CheckIn} />
                 <Route path="/driver/scan" component={DriverScan} />
                 <Route path="/driver/history" component={DriverHistory} />
-                <Route path="/driver/test-check-in" component={TestCheckIn} />
-                <Route path="/driver/quick-check-in" component={QuickCheckIn} />
-                <Route path="/driver/html-check-in" component={HtmlCheckIn} />
                 <Route component={NotFound} />
               </Switch>
             </AppLayout>

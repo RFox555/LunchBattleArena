@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/trips", authenticateUser, async (req, res) => {
     try {
-      let trips = [];
+      let trips: Trip[] = [];
       
       // Get trips based on user type
       if (req.session.userType === "driver") {

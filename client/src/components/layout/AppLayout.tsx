@@ -39,13 +39,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const navigationItems = isDriver
     ? [
         { name: "Dashboard", href: "/driver", icon: Home },
-        { name: "Check-In Rider", href: "/driver/scan", icon: QrCode },
-        { name: "Simple Check-In", href: "/driver/html-check-in", icon: QrCode },
-        { name: "History", href: "/driver/history", icon: ClipboardList },
+        { name: "Check-In Rider", href: "/driver/check-in", icon: QrCode },
+        { name: "QR Scan Check-In", href: "/driver/scan", icon: QrCode },
+        { name: "Trip History", href: "/driver/history", icon: ClipboardList },
       ]
     : [
         { name: "Dashboard", href: "/rider", icon: Home },
-        { name: "History", href: "/rider/history", icon: ClipboardList },
+        { name: "Trip History", href: "/rider/history", icon: ClipboardList },
       ];
 
   const isActivePath = (path: string) => {
