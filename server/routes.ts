@@ -163,17 +163,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users/by-rider-id/:riderId", authenticateUser, async (req, res) => {
     try {
+      console.log("Looking up rider by ID:", req.params.riderId, {
+        userId: req.session.userId,
+        userType: req.session.userType
+      });
+      
+      // Only drivers should look up riders
+      if (req.session.userType !== "driver") {
+        console.log("Access warning: Non-driver looking up rider", { userType: req.session.userType });
+      }
+      
       const { riderId } = req.params;
+      if (!riderId || typeof riderId !== 'string') {
+        console.log("Invalid rider ID format:", riderId);
+        return res.status(400).json({ message: "Invalid rider ID" });
+      }
+
       const user = await storage.getUserByRiderId(riderId);
       
       if (!user) {
+        console.log("Rider not found:", riderId);
         return res.status(404).json({ message: "Rider not found" });
       }
+      
+      console.log("Rider found:", { riderId, name: user.name });
       
       // Remove password from response
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
+      console.error("Error looking up rider:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });

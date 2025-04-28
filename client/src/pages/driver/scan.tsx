@@ -51,10 +51,18 @@ export default function DriverScan() {
   // Rider lookup mutation
   const lookupMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiRequest("GET", `/api/users/by-rider-id/${id}`);
-      return res.json();
+      console.log("Looking up rider by ID:", id);
+      try {
+        const res = await apiRequest("GET", `/api/users/by-rider-id/${id}`);
+        console.log("Rider lookup response status:", res.status);
+        return res.json();
+      } catch (error) {
+        console.error("Error in rider lookup request:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
+      console.log("Rider found:", data);
       setRider(data);
       setSearchError(null);
       setCheckedIn(false);
@@ -67,6 +75,17 @@ export default function DriverScan() {
       
       if (error.message) {
         errorMsg = error.message;
+      } else if (error.status === 404) {
+        errorMsg = `No rider found with ID: ${riderId}`;
+      } else if (error.status === 403) {
+        errorMsg = "You don't have permission to look up riders";
+      } else if (error.response) {
+        try {
+          const errorData = JSON.parse(error.response);
+          errorMsg = errorData.message || errorMsg;
+        } catch (e) {
+          // Parsing failed, use default message
+        }
       }
       
       setSearchError(errorMsg);
