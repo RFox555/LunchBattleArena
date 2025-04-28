@@ -118,7 +118,16 @@ export class MemStorage implements IStorage {
     let riderId: string | null = null;
     
     if (insertUser.userType === "rider") {
-      riderId = await this.generateRiderId();
+      // Use provided rider ID or generate one
+      if (insertUser.riderId) {
+        // Check if the provided rider ID is already taken
+        if (this.riderIds.has(insertUser.riderId)) {
+          throw new Error("This Rider ID is already in use. Please choose another one.");
+        }
+        riderId = insertUser.riderId;
+      } else {
+        riderId = await this.generateRiderId();
+      }
     }
     
     const user: User = { 

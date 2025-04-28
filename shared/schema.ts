@@ -28,6 +28,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   userType: true,
   name: true,
+  riderId: true,
 });
 
 export const insertTripSchema = createInsertSchema(trips).pick({
