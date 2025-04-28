@@ -1,6 +1,11 @@
 import { eq, desc, sql, and } from "drizzle-orm";
 import { db } from "./db";
-import { users, trips, type User, type InsertUser, type Trip, type InsertTrip } from "@shared/schema";
+import { 
+  users, trips, busLocations, 
+  type User, type InsertUser, 
+  type Trip, type InsertTrip,
+  type BusLocation, type InsertBusLocation, type UpdateBusLocation
+} from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -25,6 +30,13 @@ export interface IStorage {
   getTripsByDriverId(driverId: number): Promise<Trip[]>;
   completeTrip(id: number): Promise<Trip | undefined>;
   listRecentTrips(limit?: number): Promise<Trip[]>;
+  
+  // Bus location operations
+  createBusLocation(location: InsertBusLocation): Promise<BusLocation>;
+  getLatestBusLocation(driverId: number): Promise<BusLocation | undefined>;
+  updateBusLocation(driverId: number, location: UpdateBusLocation): Promise<BusLocation | undefined>;
+  listActiveBusLocations(): Promise<BusLocation[]>;
+  getBusLocationHistory(driverId: number, limit?: number): Promise<BusLocation[]>;
   
   // Setup operations
   setupDatabase(): Promise<void>;
@@ -52,8 +64,9 @@ export class DatabaseStorage implements IStorage {
       // Check if tables exist
       const hasUsers = await this.hasTable("users");
       const hasTrips = await this.hasTable("trips");
+      const hasBusLocations = await this.hasTable("bus_locations");
       
-      if (!hasUsers || !hasTrips) {
+      if (!hasUsers || !hasTrips || !hasBusLocations) {
         console.log("Creating database schema...");
         // Push the schema to the database
         await this.pushSchema();
@@ -113,6 +126,21 @@ export class DatabaseStorage implements IStorage {
           location TEXT,
           completed BOOLEAN NOT NULL DEFAULT FALSE,
           note TEXT
+        );
+      `);
+
+      // Create bus_locations table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS bus_locations (
+          id SERIAL PRIMARY KEY,
+          driver_id INTEGER NOT NULL,
+          latitude DOUBLE PRECISION NOT NULL,
+          longitude DOUBLE PRECISION NOT NULL,
+          heading INTEGER,
+          speed DOUBLE PRECISION,
+          timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          route_name TEXT,
+          status TEXT DEFAULT 'active'
         );
       `);
       
@@ -379,6 +407,119 @@ export class DatabaseStorage implements IStorage {
         .limit(limit);
     } catch (error) {
       console.error("Error listing recent trips:", error);
+      return [];
+    }
+  }
+
+  // Create a new bus location entry
+  async createBusLocation(location: InsertBusLocation): Promise<BusLocation> {
+    try {
+      console.log("Creating bus location with data:", location);
+      
+      // Insert with current timestamp and provided values
+      const [busLocation] = await db
+        .insert(busLocations)
+        .values({
+          ...location,
+          timestamp: new Date()
+        })
+        .returning();
+      
+      console.log("Bus location created successfully:", busLocation);
+      return busLocation;
+    } catch (error) {
+      console.error("Error creating bus location:", error);
+      throw error;
+    }
+  }
+
+  // Get the latest location for a specific driver
+  async getLatestBusLocation(driverId: number): Promise<BusLocation | undefined> {
+    try {
+      const [location] = await db
+        .select()
+        .from(busLocations)
+        .where(eq(busLocations.driverId, driverId))
+        .orderBy(desc(busLocations.timestamp))
+        .limit(1);
+      
+      return location;
+    } catch (error) {
+      console.error("Error getting latest bus location:", error);
+      return undefined;
+    }
+  }
+
+  // Update a bus location (creates a new record with updated info)
+  async updateBusLocation(driverId: number, location: UpdateBusLocation): Promise<BusLocation | undefined> {
+    try {
+      // Create a new location record with updated data
+      const [updatedLocation] = await db
+        .insert(busLocations)
+        .values({
+          driverId,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          heading: location.heading || undefined,
+          speed: location.speed || undefined,
+          routeName: location.routeName || undefined,
+          status: location.status || 'active',
+          timestamp: new Date()
+        })
+        .returning();
+      
+      return updatedLocation;
+    } catch (error) {
+      console.error("Error updating bus location:", error);
+      return undefined;
+    }
+  }
+
+  // List all active bus locations (for map display)
+  async listActiveBusLocations(): Promise<BusLocation[]> {
+    try {
+      // Create a subquery to get the latest location for each driver
+      const subquery = db
+        .select({
+          driverId: busLocations.driverId,
+          maxTimestamp: sql`MAX(${busLocations.timestamp})`.as('max_timestamp')
+        })
+        .from(busLocations)
+        .where(eq(busLocations.status, 'active'))
+        .groupBy(busLocations.driverId)
+        .as('latest_locations');
+      
+      // Join with the main table to get the full location data
+      const locations = await db
+        .select()
+        .from(busLocations)
+        .innerJoin(
+          subquery,
+          and(
+            eq(busLocations.driverId, subquery.driverId),
+            eq(busLocations.timestamp, subquery.maxTimestamp)
+          )
+        );
+      
+      // Extract just the bus location data from the join result
+      return locations.map(result => result.bus_locations);
+    } catch (error) {
+      console.error("Error listing active bus locations:", error);
+      return [];
+    }
+  }
+
+  // Get location history for a specific driver
+  async getBusLocationHistory(driverId: number, limit: number = 20): Promise<BusLocation[]> {
+    try {
+      return await db
+        .select()
+        .from(busLocations)
+        .where(eq(busLocations.driverId, driverId))
+        .orderBy(desc(busLocations.timestamp))
+        .limit(limit);
+    } catch (error) {
+      console.error("Error getting bus location history:", error);
       return [];
     }
   }
