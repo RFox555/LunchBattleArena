@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertTripSchema, loginSchema } from "@shared/schema";
@@ -6,6 +6,14 @@ import express from "express";
 import session from "express-session";
 import { ZodError } from "zod";
 import MemoryStore from "memorystore";
+
+// Extend the Express session with our custom properties
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+    userType?: 'driver' | 'rider';
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session
@@ -23,8 +31,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Authentication middleware
-  const authenticateUser = (req: Request, res: Response, next: () => void) => {
+  const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+    console.log("Authentication check:", {
+      sessionId: req.session.id,
+      userId: req.session.userId,
+      userType: req.session.userType,
+      path: req.path,
+      method: req.method
+    });
+    
     if (!req.session.userId) {
+      console.log("Authentication failed: No userId in session");
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
