@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rate Bus Condition | Transportation Tracking System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #f5f5f5;
+    }
+    .content {
+      flex: 1;
+    }
+    .card {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      border: none;
+    }
+    .card-header {
+      background-color: #0b5ed7;
+      color: white;
+      border-radius: 10px 10px 0 0 !important;
+    }
+    .btn-primary {
+      background-color: #0b5ed7;
+      border-color: #0b5ed7;
+    }
+    .btn-primary:hover {
+      background-color: #0a4cb5;
+      border-color: #0a4cb5;
+    }
+    .rating-container {
+      text-align: center;
+      padding: 15px 0;
+    }
+    .rating-stars {
+      font-size: 2rem;
+      cursor: pointer;
+      color: #ccc;
+    }
+    .rating-stars .fa-star.active {
+      color: #ffc107;
+    }
+    .rating-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    footer {
+      margin-top: auto;
+      background-color: #f5f5f5;
+      padding: 20px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">Transportation Tracking System</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/employee-dashboard">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/rate-bus">Rate Bus</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="logoutBtn">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container content my-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="mb-0">Rate Your Bus Experience</h4>
+          </div>
+          <div class="card-body">
+            <form id="ratingForm">
+              <div class="alert alert-info">
+                Please rate your most recent bus experience. Your feedback helps us improve transportation services.
+              </div>
+              
+              <div class="mb-4 rating-container">
+                <div class="rating-label">Comfort Rating</div>
+                <div class="rating-stars" id="comfortStars">
+                  <i class="fas fa-star" data-rating="1"></i>
+                  <i class="fas fa-star" data-rating="2"></i>
+                  <i class="fas fa-star" data-rating="3"></i>
+                  <i class="fas fa-star" data-rating="4"></i>
+                  <i class="fas fa-star" data-rating="5"></i>
+                </div>
+                <input type="hidden" id="comfortRating" name="comfortRating" value="0">
+              </div>
+              
+              <div class="mb-4 rating-container">
+                <div class="rating-label">Cleanliness Rating</div>
+                <div class="rating-stars" id="cleanlinessStars">
+                  <i class="fas fa-star" data-rating="1"></i>
+                  <i class="fas fa-star" data-rating="2"></i>
+                  <i class="fas fa-star" data-rating="3"></i>
+                  <i class="fas fa-star" data-rating="4"></i>
+                  <i class="fas fa-star" data-rating="5"></i>
+                </div>
+                <input type="hidden" id="cleanlinessRating" name="cleanlinessRating" value="0">
+              </div>
+              
+              <div class="mb-4 rating-container">
+                <div class="rating-label">Overall Experience</div>
+                <div class="rating-stars" id="overallStars">
+                  <i class="fas fa-star" data-rating="1"></i>
+                  <i class="fas fa-star" data-rating="2"></i>
+                  <i class="fas fa-star" data-rating="3"></i>
+                  <i class="fas fa-star" data-rating="4"></i>
+                  <i class="fas fa-star" data-rating="5"></i>
+                </div>
+                <input type="hidden" id="overallRating" name="overallRating" value="0">
+              </div>
+              
+              <div class="mb-3">
+                <label for="driverSelect" class="form-label">Select Driver</label>
+                <select class="form-select" id="driverSelect" name="driverId" required>
+                  <option value="">-- Select Driver --</option>
+                  <!-- Driver options will be loaded dynamically -->
+                </select>
+              </div>
+              
+              <div class="mb-3">
+                <label for="commentText" class="form-label">Additional Comments (Optional)</label>
+                <textarea class="form-control" id="commentText" name="comment" rows="3" placeholder="Share your experience or suggestions..."></textarea>
+              </div>
+              
+              <div class="mb-3 text-center">
+                <button type="submit" class="btn btn-primary btn-lg px-4">Submit Rating</button>
+              </div>
+              
+              <div id="formFeedback" class="alert d-none"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p class="mb-0">&copy; 2025 Transportation Tracking System</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication status
+      checkAuth();
+      
+      // Load drivers
+      loadDrivers();
+      
+      // Set up rating stars
+      setupRatingStars('comfortStars', 'comfortRating');
+      setupRatingStars('cleanlinessStars', 'cleanlinessRating');
+      setupRatingStars('overallStars', 'overallRating');
+      
+      // Set up form submission
+      document.getElementById('ratingForm').addEventListener('submit', submitRating);
+      
+      // Set up logout
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+    });
+    
+    // Authentication check
+    function checkAuth() {
+      fetch('/api/auth/me')
+        .then(response => {
+          if (!response.ok) {
+            window.location.href = '/login';
+            throw new Error('Not authenticated');
+          }
+          return response.json();
+        })
+        .then(user => {
+          if (user.userType !== 'rider') {
+            window.location.href = '/';
+            throw new Error('Not authorized - only employees can rate buses');
+          }
+          
+          console.log('Authenticated as employee:', user.name);
+        })
+        .catch(error => console.error('Auth error:', error));
+    }
+    
+    // Load drivers for the select dropdown
+    function loadDrivers() {
+      fetch('/api/users?userType=driver')
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load drivers');
+          return response.json();
+        })
+        .then(drivers => {
+          const driverSelect = document.getElementById('driverSelect');
+          
+          drivers.forEach(driver => {
+            const option = document.createElement('option');
+            option.value = driver.id;
+            option.textContent = driver.name;
+            driverSelect.appendChild(option);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading drivers:', error);
+          showFeedback('Failed to load drivers. Please refresh the page.', 'danger');
+        });
+    }
+    
+    // Setup star rating functionality
+    function setupRatingStars(containerId, inputId) {
+      const container = document.getElementById(containerId);
+      const stars = container.querySelectorAll('.fa-star');
+      const input = document.getElementById(inputId);
+      
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          const rating = parseInt(star.getAttribute('data-rating'));
+          input.value = rating;
+          
+          // Update visuals
+          stars.forEach(s => {
+            const sRating = parseInt(s.getAttribute('data-rating'));
+            if (sRating <= rating) {
+              s.classList.add('active');
+            } else {
+              s.classList.remove('active');
+            }
+          });
+        });
+        
+        star.addEventListener('mouseover', () => {
+          const rating = parseInt(star.getAttribute('data-rating'));
+          
+          stars.forEach(s => {
+            const sRating = parseInt(s.getAttribute('data-rating'));
+            if (sRating <= rating) {
+              s.classList.add('hover');
+            } else {
+              s.classList.remove('hover');
+            }
+          });
+        });
+        
+        star.addEventListener('mouseout', () => {
+          stars.forEach(s => s.classList.remove('hover'));
+        });
+      });
+    }
+    
+    // Submit rating form
+    function submitRating(event) {
+      event.preventDefault();
+      
+      const formData = new FormData(event.target);
+      const ratingData = {
+        driverId: parseInt(formData.get('driverId')),
+        comfortRating: parseInt(formData.get('comfortRating')),
+        cleanlinessRating: parseInt(formData.get('cleanlinessRating')),
+        overallRating: parseInt(formData.get('overallRating')),
+        comment: formData.get('comment')
+      };
+      
+      // Validate ratings
+      if (ratingData.comfortRating === 0 || 
+          ratingData.cleanlinessRating === 0 || 
+          ratingData.overallRating === 0) {
+        showFeedback('Please provide all ratings', 'warning');
+        return;
+      }
+      
+      // Validate driver selection
+      if (isNaN(ratingData.driverId) || ratingData.driverId <= 0) {
+        showFeedback('Please select a driver', 'warning');
+        return;
+      }
+      
+      // Submit the rating
+      fetch('/api/bus-ratings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ratingData)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to submit rating');
+        return response.json();
+      })
+      .then(result => {
+        showFeedback('Rating submitted successfully! Thank you for your feedback.', 'success');
+        resetForm();
+      })
+      .catch(error => {
+        console.error('Error submitting rating:', error);
+        showFeedback('Failed to submit rating. Please try again.', 'danger');
+      });
+    }
+    
+    // Display feedback to the user
+    function showFeedback(message, type) {
+      const feedbackElement = document.getElementById('formFeedback');
+      feedbackElement.textContent = message;
+      feedbackElement.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+      feedbackElement.classList.add(`alert-${type}`);
+      
+      // Scroll to feedback
+      feedbackElement.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Reset the form after successful submission
+    function resetForm() {
+      document.getElementById('ratingForm').reset();
+      document.getElementById('comfortRating').value = '0';
+      document.getElementById('cleanlinessRating').value = '0';
+      document.getElementById('overallRating').value = '0';
+      
+      // Reset stars
+      document.querySelectorAll('.rating-stars .fa-star').forEach(star => {
+        star.classList.remove('active');
+      });
+    }
+    
+    // Handle logout
+    function logout(event) {
+      event.preventDefault();
+      
+      fetch('/api/auth/logout', {
+        method: 'POST'
+      })
+      .then(() => {
+        window.location.href = '/login';
+      })
+      .catch(error => {
+        console.error('Logout error:', error);
+      });
+    }
+  </script>
+</body>
+</html>

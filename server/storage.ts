@@ -634,10 +634,10 @@ export class DatabaseStorage implements IStorage {
         .from(busRatings)
         .where(eq(busRatings.driverId, driverId));
       
-      // Format and handle null values
-      const comfortAvg = result.averageComfort ? parseFloat(String(result.averageComfort)) : 0;
-      const cleanlinessAvg = result.averageCleanliness ? parseFloat(String(result.averageCleanliness)) : 0;
-      const overallAvg = result.averageOverall ? parseFloat(String(result.averageOverall)) : 0;
+      // Format and handle null values - convert any type to number safely
+      const comfortAvg = result.averageComfort ? Number(result.averageComfort) : 0;
+      const cleanlinessAvg = result.averageCleanliness ? Number(result.averageCleanliness) : 0;
+      const overallAvg = result.averageOverall ? Number(result.averageOverall) : 0;
         
       return {
         averageComfort: Math.round(comfortAvg * 10) / 10, // Round to 1 decimal place

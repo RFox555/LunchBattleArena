@@ -422,6 +422,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('bus-tracking.html', { root: './public' });
   });
   
+  // Bus rating page for employees
+  app.get('/rate-bus', (req, res) => {
+    res.sendFile('rate-bus.html', { root: './public' });
+  });
+  
+  // Driver ratings dashboard
+  app.get('/driver-ratings', (req, res) => {
+    res.sendFile('driver-ratings.html', { root: './public' });
+  });
+  
   // Bus Location API Endpoints
   // Create a new bus location (for drivers)
   app.post("/api/bus-locations", authenticateUser, async (req, res) => {
