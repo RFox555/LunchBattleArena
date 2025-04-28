@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertTripSchema, loginSchema, checkInSchema } from "@shared/schema";
+import { insertUserSchema, insertTripSchema, loginSchema, checkInSchema, type Trip } from "@shared/schema";
 import express from "express";
 import session from "express-session";
 import { ZodError } from "zod";
@@ -325,6 +325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add direct test route
+  app.get('/test', (req, res) => {
+    res.sendFile('direct-test.html', { root: './public' });
+  });
+  
   // Create HTTP server
   const httpServer = createServer(app);
   
