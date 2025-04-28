@@ -22,7 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session with PostgreSQL store
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "bus-tracker-secret",
+      secret: process.env.SESSION_SECRET || "transportation-tracking-system-secret",
       resave: false,
       saveUninitialized: false,
       cookie: { 
@@ -165,9 +165,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users/by-rider-id/:riderId", authenticateUser, async (req, res) => {
     try {
-      // Only drivers should look up riders
+      // Only drivers should look up employees (stored as 'rider' in database)
       if (req.session.userType !== "driver") {
-        return res.status(403).json({ message: "Only drivers can look up riders" });
+        return res.status(403).json({ message: "Only drivers can look up employees" });
       }
       
       const { riderId } = req.params;
@@ -175,13 +175,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid rider ID" });
       }
 
-      // Find the rider
+      // Find the employee (stored as rider in database)
       const user = await storage.getUserByRiderId(riderId);
       if (!user) {
-        return res.status(404).json({ message: "Rider not found" });
+        return res.status(404).json({ message: "Employee not found" });
       }
       
-      // Return rider data (without password)
+      // Return employee data (without password)
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
@@ -196,15 +196,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate check-in data
       const data = checkInSchema.parse(req.body);
       
-      // Only drivers can check in riders
+      // Only drivers can check in employees
       if (req.session.userType !== "driver") {
-        return res.status(403).json({ message: "Only drivers can check in riders" });
+        return res.status(403).json({ message: "Only drivers can check in employees" });
       }
       
-      // Make sure the rider exists
-      const rider = await storage.getUserByRiderId(data.riderId);
-      if (!rider) {
-        return res.status(404).json({ message: "Rider not found" });
+      // Make sure the employee exists
+      const employee = await storage.getUserByRiderId(data.riderId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
       }
       
       // Create the trip record
@@ -388,8 +388,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Direct check-in page (no auth required)
-  app.get('/check-in', (req, res) => {
+  app.get('/direct-checkin', (req, res) => {
     res.sendFile('direct-checkin.html', { root: './public' });
+  });
+  
+  // Backward compatibility - redirect old check-in URL to direct-checkin
+  app.get('/check-in', (req, res) => {
+    res.redirect('/direct-checkin');
   });
   
   // Employee dashboard page
