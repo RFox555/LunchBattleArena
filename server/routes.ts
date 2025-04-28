@@ -325,9 +325,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add direct test route
+  // Add direct routes for HTML pages
   app.get('/test', (req, res) => {
     res.sendFile('direct-test.html', { root: './public' });
+  });
+  
+  // Login page
+  app.get('/login', (req, res) => {
+    res.sendFile('login.html', { root: './public' });
+  });
+  
+  // Direct check-in page
+  app.get('/check-in', (req, res) => {
+    res.sendFile('direct-checkin.html', { root: './public' });
   });
   
   // Create HTTP server

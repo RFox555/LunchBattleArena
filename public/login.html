@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Tracker Login</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    h1 {
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+    .logo {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .error {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      display: none;
+    }
+    .credentials {
+      background: #f3f4f6;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .cred-item {
+      margin-bottom: 8px;
+    }
+    .bold {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🚌</div>
+    <h1>Bus Tracker Login</h1>
+    <p>Please log in to continue</p>
+  </header>
+
+  <div class="card">
+    <h2>Login</h2>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" value="driver1" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" value="password123" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="userType">I am a:</label>
+        <select id="userType" name="userType" required>
+          <option value="driver" selected>Driver</option>
+          <option value="rider">Rider</option>
+        </select>
+      </div>
+      
+      <button type="submit">Login</button>
+    </form>
+    
+    <div id="error-message" class="error"></div>
+  </div>
+  
+  <div class="card credentials">
+    <h3>Test Credentials</h3>
+    <div class="cred-item"><span class="bold">Driver:</span> username: driver1, password: password123</div>
+    <div class="cred-item"><span class="bold">Rider:</span> username: rider1, password: password123</div>
+  </div>
+  
+  <script>
+    // DOM Elements
+    const loginForm = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Check if already logged in
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        
+        if (response.ok) {
+          const user = await response.json();
+          // Already logged in, redirect based on user type
+          if (user.userType === 'driver') {
+            window.location.href = '/check-in';
+          } else {
+            window.location.href = '/rider-dashboard';
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+      }
+    }
+
+    // Handle login form submission
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      errorMessage.style.display = 'none';
+      
+      const formData = new FormData(loginForm);
+      const loginData = {
+        username: formData.get('username'),
+        password: formData.get('password'),
+        userType: formData.get('userType')
+      };
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(loginData),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const user = await response.json();
+          console.log('Login successful:', user);
+          
+          // Redirect based on user type
+          if (user.userType === 'driver') {
+            window.location.href = '/check-in';
+          } else {
+            window.location.href = '/rider-dashboard';
+          }
+        } else {
+          const errorData = await response.json();
+          console.error('Login error:', errorData);
+          
+          errorMessage.textContent = errorData.message || 'Invalid username or password';
+          errorMessage.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        errorMessage.textContent = 'An error occurred during login';
+        errorMessage.style.display = 'block';
+      }
+    });
+
+    // Check auth on page load
+    checkAuth();
+  </script>
+</body>
+</html>

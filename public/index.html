@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Tracker Home</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+    .logo {
+      font-size: 64px;
+      margin: 20px 0;
+    }
+    h1 {
+      color: #2563eb;
+      margin-bottom: 20px;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 500px;
+      margin: 40px auto;
+      gap: 20px;
+    }
+    .button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 18px 24px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease;
+    }
+    .button:hover {
+      background: #1d4ed8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
+    }
+    .button-icon {
+      margin-right: 12px;
+      font-size: 24px;
+    }
+    .description {
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">🚌</div>
+  <h1>Bus Rider Tracking System</h1>
+  
+  <div class="description">
+    <p>Welcome to the Bus Rider Tracking System. This application helps bus drivers track rider check-ins and maintain transportation records.</p>
+  </div>
+  
+  <div class="buttons">
+    <a href="/check-in" class="button">
+      <span class="button-icon">✓</span>
+      Check In Rider
+    </a>
+    
+    <a href="/login" class="button" style="background-color: #4f46e5;">
+      <span class="button-icon">👤</span>
+      Login
+    </a>
+    
+    <a href="/test" class="button" style="background-color: #0891b2;">
+      <span class="button-icon">🔍</span>
+      API Test Page
+    </a>
+  </div>
+  
+  <p>© 2025 Bus Tracker App</p>
+</body>
+</html>

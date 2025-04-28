@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Rider Check-In</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    h1 {
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+    .logo {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .success {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      display: none;
+    }
+    .error {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      display: none;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    .loading:after {
+      content: "...";
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: "."; }
+      40% { content: ".."; }
+      60%, 100% { content: "..."; }
+    }
+    .trip-info {
+      margin-top: 20px;
+      display: none;
+    }
+    .trip-detail {
+      margin-bottom: 4px;
+    }
+    .bold {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🚌</div>
+    <h1>Bus Rider Check-In</h1>
+    <p id="user-info">Not logged in</p>
+  </header>
+
+  <div class="card">
+    <h2>Check In Rider</h2>
+    <form id="check-in-form">
+      <div class="form-group">
+        <label for="rider-id">Rider ID:</label>
+        <input type="text" id="rider-id" name="riderId" placeholder="Enter 5-digit ID" value="12345" maxlength="5" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="location">Pickup Location:</label>
+        <input type="text" id="location" name="location" placeholder="Enter pickup location" value="Bus Stop" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="note">Note (Optional):</label>
+        <textarea id="note" name="note" rows="3" placeholder="Add any notes about this trip"></textarea>
+      </div>
+      
+      <button type="submit">Check In Rider</button>
+    </form>
+    
+    <div id="success-message" class="success"></div>
+    <div id="error-message" class="error"></div>
+    <div id="loading" class="loading">Checking in rider</div>
+    
+    <div id="trip-info" class="trip-info">
+      <h3>Trip Details</h3>
+      <div class="trip-detail"><span class="bold">Trip ID:</span> <span id="trip-id"></span></div>
+      <div class="trip-detail"><span class="bold">Rider ID:</span> <span id="trip-rider-id"></span></div>
+      <div class="trip-detail"><span class="bold">Location:</span> <span id="trip-location"></span></div>
+      <div class="trip-detail"><span class="bold">Time:</span> <span id="trip-time"></span></div>
+      <div class="trip-detail"><span class="bold">Note:</span> <span id="trip-note"></span></div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>Actions</h2>
+    <button id="list-trips-btn" style="margin-bottom: 10px;">View Trip History</button>
+    <button id="logout-btn">Logout</button>
+  </div>
+  
+  <script>
+    // DOM Elements
+    const checkInForm = document.getElementById('check-in-form');
+    const userInfo = document.getElementById('user-info');
+    const successMessage = document.getElementById('success-message');
+    const errorMessage = document.getElementById('error-message');
+    const loadingIndicator = document.getElementById('loading');
+    const tripInfo = document.getElementById('trip-info');
+    const tripId = document.getElementById('trip-id');
+    const tripRiderId = document.getElementById('trip-rider-id');
+    const tripLocation = document.getElementById('trip-location');
+    const tripTime = document.getElementById('trip-time');
+    const tripNote = document.getElementById('trip-note');
+    const listTripsBtn = document.getElementById('list-trips-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Check if user is logged in
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        
+        if (response.ok) {
+          const user = await response.json();
+          userInfo.textContent = `Logged in as ${user.name} (${user.userType})`;
+          return true;
+        } else {
+          userInfo.textContent = 'Not logged in';
+          window.location.href = '/login';
+          return false;
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        userInfo.textContent = 'Error checking authentication';
+        return false;
+      }
+    }
+
+    // Handle check-in form submission
+    checkInForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Show loading state
+      loadingIndicator.style.display = 'block';
+      successMessage.style.display = 'none';
+      errorMessage.style.display = 'none';
+      tripInfo.style.display = 'none';
+      
+      const formData = new FormData(checkInForm);
+      const checkInData = {
+        riderId: formData.get('riderId'),
+        location: formData.get('location'),
+        note: formData.get('note')
+      };
+      
+      try {
+        const response = await fetch('/api/trips', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(checkInData),
+          credentials: 'include'
+        });
+        
+        // Hide loading state
+        loadingIndicator.style.display = 'none';
+        
+        if (response.ok) {
+          const trip = await response.json();
+          console.log('Trip created:', trip);
+          
+          // Show success message
+          successMessage.textContent = `Rider ${trip.riderId} checked in successfully!`;
+          successMessage.style.display = 'block';
+          
+          // Display trip info
+          tripId.textContent = trip.id;
+          tripRiderId.textContent = trip.riderId;
+          tripLocation.textContent = trip.location;
+          tripTime.textContent = new Date(trip.timestamp).toLocaleString();
+          tripNote.textContent = trip.note || 'No note';
+          tripInfo.style.display = 'block';
+          
+          // Reset form
+          checkInForm.reset();
+        } else {
+          const errorData = await response.json();
+          console.error('Error creating trip:', errorData);
+          
+          // Show error message
+          errorMessage.textContent = errorData.message || 'Failed to check in rider';
+          errorMessage.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        
+        // Hide loading state and show error
+        loadingIndicator.style.display = 'none';
+        errorMessage.textContent = 'An error occurred while checking in the rider';
+        errorMessage.style.display = 'block';
+      }
+    });
+
+    // Handle list trips button
+    listTripsBtn.addEventListener('click', () => {
+      window.location.href = '/driver/history';
+    });
+
+    // Handle logout button
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          window.location.href = '/login';
+        } else {
+          console.error('Logout failed');
+        }
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
+    });
+
+    // Check auth on page load
+    checkAuth();
+  </script>
+</body>
+</html>
