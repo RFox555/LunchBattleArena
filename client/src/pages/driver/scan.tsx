@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,20 +17,29 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
-import CheckInForm from "@/components/CheckInForm";
 import QrScanner from "@/components/QrScanner";
 import { QrCode, Search, CheckCircle, AlertCircle, KeyboardIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// Define the schemas
 const searchSchema = z.object({
   riderId: z.string().length(5, {
     message: "Rider ID must be exactly 5 digits",
   }),
 });
 
+const checkInSchema = z.object({
+  location: z.string().min(1, {
+    message: "Location is required",
+  }),
+  note: z.string().optional(),
+});
+
+type CheckInFormData = z.infer<typeof checkInSchema>;
+
 export default function DriverScan() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [riderId, setRiderId] = useState<string | null>(null);
@@ -39,143 +47,84 @@ export default function DriverScan() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [checkedIn, setCheckedIn] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [isCheckinLoading, setIsCheckinLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("scan");
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("manual");
 
-  const form = useForm<z.infer<typeof searchSchema>>({
+  // Search form
+  const searchForm = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
       riderId: "",
     },
   });
 
-  // Rider lookup mutation
-  const lookupMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log("Looking up rider by ID:", id);
-      try {
-        const res = await apiRequest("GET", `/api/users/by-rider-id/${id}`);
-        console.log("Rider lookup response status:", res.status);
-        return res.json();
-      } catch (error) {
-        console.error("Error in rider lookup request:", error);
-        throw error;
-      }
+  // Check-in form
+  const checkInForm = useForm<CheckInFormData>({
+    resolver: zodResolver(checkInSchema),
+    defaultValues: {
+      location: "",
+      note: "",
     },
-    onSuccess: (data) => {
+  });
+
+  // Handle searching for a rider
+  const handleSearch = async (values: z.infer<typeof searchSchema>) => {
+    const id = values.riderId.replace(/\s+/g, "");
+    setRiderId(id);
+    setIsLoading(true);
+    
+    try {
+      console.log("Looking up rider with ID:", id);
+      
+      const response = await fetch(`/api/users/by-rider-id/${id}`, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Rider lookup failed with status ${response.status}:`, errorText);
+        
+        setRider(null);
+        setSearchError("Rider not found. Please check the ID and try again.");
+        
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Rider not found. Please check the ID and try again.",
+        });
+        return;
+      }
+
+      const data = await response.json();
       console.log("Rider found:", data);
+      
       setRider(data);
       setSearchError(null);
       setCheckedIn(false);
-    },
-    onError: (error: any) => {
-      console.error("Rider lookup error:", error);
+    } catch (error) {
+      console.error("Error looking up rider:", error);
+      
       setRider(null);
+      setSearchError("An error occurred while looking up the rider.");
       
-      let errorMsg = "Rider not found. Please check the ID and try again.";
-      
-      if (error.message) {
-        errorMsg = error.message;
-      } else if (error.status === 404) {
-        errorMsg = `No rider found with ID: ${riderId}`;
-      } else if (error.status === 403) {
-        errorMsg = "You don't have permission to look up riders";
-      } else if (error.response) {
-        try {
-          const errorData = JSON.parse(error.response);
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          // Parsing failed, use default message
-        }
-      }
-      
-      setSearchError(errorMsg);
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMsg,
+        description: "An error occurred while looking up the rider.",
       });
-    },
-  });
-
-  // Check-in mutation
-  const checkInMutation = useMutation({
-    mutationFn: async (data: { riderId: string; location: string; note?: string }) => {
-      console.log("Sending check-in data:", data);
-      
-      // Use simple fetch for maximum control
-      const response = await fetch("/api/check-in", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      
-      console.log("Check-in raw response:", response);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Check-in failed with status:", response.status, errorText);
-        throw new Error(`Check-in failed: ${response.status} ${errorText}`);
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      // Reset loading state
-      setIsCheckinLoading(false);
-      
-      // Update cache
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips/recent"] });
-      
-      // Show success state
-      setCheckedIn(true);
-      toast({
-        title: "Check-in successful",
-        description: `Rider ${riderId} has been checked in successfully.`,
-      });
-    },
-    onError: (error: any) => {
-      // Reset loading state
-      setIsCheckinLoading(false);
-      
-      console.error("Check-in error:", error);
-      let errorMsg = "There was an error checking in the rider. Please try again.";
-      
-      if (error.message) {
-        errorMsg = error.message;
-      } else if (error.response) {
-        try {
-          const errorData = JSON.parse(error.response);
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          // Parsing failed, use default message
-        }
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "Check-in failed",
-        description: errorMsg,
-      });
-    },
-  });
-
-  const onSearch = (values: z.infer<typeof searchSchema>) => {
-    const id = values.riderId.replace(/\s+/g, ""); // Remove any spaces
-    setRiderId(id);
-    lookupMutation.mutate(id);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // Handle QR code scan result
   const handleQrCodeResult = (result: string) => {
-    // Check if the result is a 5-digit number
     if (/^\d{5}$/.test(result)) {
       setRiderId(result);
-      form.setValue("riderId", result);
-      lookupMutation.mutate(result);
+      searchForm.setValue("riderId", result);
+      handleSearch({ riderId: result });
     } else {
       toast({
         variant: "destructive",
@@ -185,52 +134,74 @@ export default function DriverScan() {
     }
   };
 
-  const handleCheckIn = async (data: { location: string; note?: string }) => {
-    if (!riderId) {
-      console.error("Check-in failed: No rider ID provided");
+  // Handle check-in form submission
+  const handleCheckIn = async (formData: CheckInFormData) => {
+    if (!riderId || !rider) {
       toast({
         variant: "destructive",
-        title: "Check-in failed",
-        description: "No rider ID was provided. Please search for a rider first.",
+        title: "Error",
+        description: "No rider selected. Please search for a rider first.",
       });
       return;
     }
-    
-    console.log("Attempting to check in rider", {
-      riderId,
-      riderData: rider,
-      location: data.location,
-      note: data.note
-    });
-    
-    // Intentionally show loading state even before mutation starts
-    setIsCheckinLoading(true);
-    
-    const checkInData = {
-      riderId,
-      location: data.location,
-      note: data.note || "",
-    };
+
+    setIsLoading(true);
     
     try {
-      // Use the mutation to maintain React Query's state management
-      checkInMutation.mutate(checkInData);
+      console.log("Checking in rider:", {
+        riderId,
+        location: formData.location,
+        note: formData.note || "",
+      });
+      
+      const response = await fetch("/api/check-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          riderId,
+          location: formData.location,
+          note: formData.note || "",
+        }),
+        credentials: "include",
+      });
+
+      console.log("Check-in response:", response);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Check-in failed with status ${response.status}:`, errorText);
+        
+        throw new Error(`Check-in failed: ${errorText}`);
+      }
+
+      // Successfully checked in
+      const data = await response.json();
+      console.log("Check-in successful, received data:", data);
+      
+      // Update UI state
+      setCheckedIn(true);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips/recent"] });
+      
+      toast({
+        title: "Success",
+        description: `Rider ${riderId} has been checked in successfully.`,
+      });
     } catch (error) {
-      console.error("Error initiating check-in mutation:", error);
-      setIsCheckinLoading(false);
+      console.error("Error checking in rider:", error);
       
       toast({
         variant: "destructive",
         title: "Check-in failed",
-        description: "There was an error checking in the rider. Please try again.",
+        description: error instanceof Error ? error.message : "An error occurred during check-in",
       });
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // If user presses Enter, submit the form
-    if (e.key === "Enter" && form.formState.isValid) {
-      form.handleSubmit(onSearch)();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -242,7 +213,7 @@ export default function DriverScan() {
       </p>
 
       <Tabs 
-        defaultValue="scan" 
+        defaultValue="manual" 
         value={activeTab}
         onValueChange={setActiveTab}
         className="space-y-4"
@@ -275,14 +246,13 @@ export default function DriverScan() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
+              <Form {...searchForm}>
                 <form
-                  onSubmit={form.handleSubmit(onSearch)}
+                  onSubmit={searchForm.handleSubmit(handleSearch)}
                   className="space-y-4"
-                  onKeyDown={handleKeyDown}
                 >
                   <FormField
-                    control={form.control}
+                    control={searchForm.control}
                     name="riderId"
                     render={({ field }) => (
                       <FormItem>
@@ -297,9 +267,9 @@ export default function DriverScan() {
                             />
                             <Button
                               type="submit"
-                              disabled={lookupMutation.isPending || !form.formState.isValid}
+                              disabled={isLoading}
                             >
-                              {lookupMutation.isPending ? "Searching..." : "Search"}
+                              {isLoading ? "Searching..." : "Search"}
                             </Button>
                           </div>
                         </FormControl>
@@ -337,7 +307,50 @@ export default function DriverScan() {
               <p className="text-sm">ID: {rider.riderId}</p>
             </div>
 
-            <CheckInForm onSubmit={handleCheckIn} isPending={checkInMutation.isPending} />
+            <Form {...checkInForm}>
+              <form onSubmit={checkInForm.handleSubmit(handleCheckIn)} className="space-y-4">
+                <FormField
+                  control={checkInForm.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter current location or stop name"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Enter the current bus location or stop
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={checkInForm.control}
+                  name="note"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Note (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Add any additional information"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Checking in..." : "Check-In Rider"}
+                </Button>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       )}
