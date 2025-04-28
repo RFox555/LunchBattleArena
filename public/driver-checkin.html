@@ -672,6 +672,12 @@
     
     // Initialize
     checkAuth();
+    
+    // Initialize location tracking elements here - driver-location.js will auto-initialize
+    // but we need to make sure it's properly loaded and can find all the DOM elements
+    if (typeof window.driverLocationTracker === 'undefined') {
+      console.warn('Driver location tracking not available. Make sure driver-location.js is loaded correctly.');
+    }
   </script>
 </body>
 </html>
