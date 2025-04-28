@@ -209,6 +209,14 @@
           <div id="reader"></div>
           <button id="start-scan" class="button">Start Scanner</button>
           <button id="stop-scan" class="button" style="display:none; background-color: #e11d48;">Stop Scanner</button>
+          
+          <div style="margin-top: 20px; text-align: center;">
+            <p>If camera access is not available, you can manually enter the Rider ID below:</p>
+            <div style="display: flex; max-width: 300px; margin: 0 auto;">
+              <input type="text" id="qr-manual-input" placeholder="Enter Rider ID" style="margin-right: 10px;">
+              <button id="qr-manual-submit" class="button" style="width: auto; margin: 0;">Submit</button>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -289,6 +297,8 @@
     const logoutButton = document.getElementById('logout-button');
     const startScanButton = document.getElementById('start-scan');
     const stopScanButton = document.getElementById('stop-scan');
+    const qrManualInput = document.getElementById('qr-manual-input');
+    const qrManualSubmit = document.getElementById('qr-manual-submit');
     
     // Current user data
     let currentUser = null;
@@ -556,6 +566,26 @@
         formData.get('location'),
         formData.get('note')
       );
+    });
+    
+    // Handle manual QR code input
+    qrManualSubmit.addEventListener('click', () => {
+      const riderId = qrManualInput.value.trim();
+      if (riderId) {
+        checkInRider(riderId);
+        qrManualInput.value = ''; // Clear the input field
+      } else {
+        errorMessage.textContent = 'Please enter a valid Rider ID';
+        errorMessage.style.display = 'block';
+      }
+    });
+    
+    // Allow pressing Enter in the manual QR input
+    qrManualInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        qrManualSubmit.click();
+      }
     });
     
     // Handle logout
