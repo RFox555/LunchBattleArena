@@ -38,6 +38,19 @@ export const busLocations = pgTable("bus_locations", {
   status: text("status").default("active"), // active, inactive, off-duty, etc.
 });
 
+// Database schema for bus condition and comfort ratings
+export const busRatings = pgTable("bus_ratings", {
+  id: serial("id").primaryKey(),
+  driverId: integer("driver_id").notNull(), // References user.id for a driver
+  riderId: text("rider_id").notNull(), // The rider who submitted the rating
+  tripId: integer("trip_id"), // References trip.id if the rating is for a specific trip (optional)
+  comfortRating: integer("comfort_rating").notNull(), // Rating from 1-5
+  cleanlinessRating: integer("cleanliness_rating").notNull(), // Rating from 1-5
+  overallRating: integer("overall_rating").notNull(), // Rating from 1-5
+  comment: text("comment"), // Optional feedback comment
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 // Schema for inserting users (for registration)
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -90,6 +103,26 @@ export const updateBusLocationSchema = z.object({
   status: z.string().optional(),
 });
 
+// Schema for inserting bus ratings
+export const insertBusRatingSchema = createInsertSchema(busRatings).pick({
+  driverId: true,
+  riderId: true,
+  tripId: true,
+  comfortRating: true,
+  cleanlinessRating: true,
+  overallRating: true,
+  comment: true,
+});
+
+// Schema for validating bus rating submissions
+export const busRatingFormSchema = z.object({
+  driverId: z.number().int(),
+  comfortRating: z.number().int().min(1).max(5),
+  cleanlinessRating: z.number().int().min(1).max(5),
+  overallRating: z.number().int().min(1).max(5),
+  comment: z.string().optional(),
+});
+
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -99,3 +132,6 @@ export type CheckInData = z.infer<typeof checkInSchema>;
 export type InsertBusLocation = z.infer<typeof insertBusLocationSchema>;
 export type BusLocation = typeof busLocations.$inferSelect;
 export type UpdateBusLocation = z.infer<typeof updateBusLocationSchema>;
+export type InsertBusRating = z.infer<typeof insertBusRatingSchema>;
+export type BusRating = typeof busRatings.$inferSelect;
+export type BusRatingFormData = z.infer<typeof busRatingFormSchema>;

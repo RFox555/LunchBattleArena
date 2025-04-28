@@ -1,10 +1,11 @@
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, avg } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, trips, busLocations, 
+  users, trips, busLocations, busRatings,
   type User, type InsertUser, 
   type Trip, type InsertTrip,
-  type BusLocation, type InsertBusLocation, type UpdateBusLocation
+  type BusLocation, type InsertBusLocation, type UpdateBusLocation,
+  type BusRating, type InsertBusRating
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -38,6 +39,18 @@ export interface IStorage {
   listActiveBusLocations(): Promise<BusLocation[]>;
   getBusLocationHistory(driverId: number, limit?: number): Promise<BusLocation[]>;
   
+  // Bus ratings operations
+  createBusRating(rating: InsertBusRating): Promise<BusRating>;
+  getBusRating(id: number): Promise<BusRating | undefined>;
+  getBusRatingsByDriverId(driverId: number, limit?: number): Promise<BusRating[]>;
+  getBusRatingsByRiderId(riderId: string): Promise<BusRating[]>;
+  getBusRatingStats(driverId: number): Promise<{
+    averageComfort: number;
+    averageCleanliness: number;
+    averageOverall: number;
+    totalRatings: number;
+  }>;
+  
   // Setup operations
   setupDatabase(): Promise<void>;
   seedTestData(): Promise<void>;
@@ -65,8 +78,9 @@ export class DatabaseStorage implements IStorage {
       const hasUsers = await this.hasTable("users");
       const hasTrips = await this.hasTable("trips");
       const hasBusLocations = await this.hasTable("bus_locations");
+      const hasBusRatings = await this.hasTable("bus_ratings");
       
-      if (!hasUsers || !hasTrips || !hasBusLocations) {
+      if (!hasUsers || !hasTrips || !hasBusLocations || !hasBusRatings) {
         console.log("Creating database schema...");
         // Push the schema to the database
         await this.pushSchema();
