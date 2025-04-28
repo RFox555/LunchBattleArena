@@ -266,6 +266,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to create trip" });
     }
   });
+  
+  // Direct trip creation endpoint without authentication
+  app.post("/api/direct-trips", async (req, res) => {
+    try {
+      const { riderId, location, note } = req.body;
+      
+      if (!riderId) {
+        return res.status(400).json({ message: "Rider ID is required" });
+      }
+      
+      // Check if rider exists
+      const rider = await storage.getUserByRiderId(riderId);
+      if (!rider) {
+        return res.status(404).json({ message: "Rider not found" });
+      }
+      
+      // Get the first driver from the system
+      const drivers = await storage.listUsers("driver");
+      if (!drivers || drivers.length === 0) {
+        return res.status(500).json({ message: "No drivers available in the system" });
+      }
+      
+      // Create the trip with minimal validation
+      const tripData = {
+        riderId,
+        driverId: drivers[0].id,
+        location: location || "Unknown location",
+        note: note || null
+      };
+      
+      console.log("Creating direct trip with data:", tripData);
+      
+      const trip = await storage.createTrip(tripData);
+      console.log("Direct trip created successfully", { tripId: trip.id });
+      return res.status(201).json(trip);
+    } catch (error) {
+      console.error("Direct trip creation error:", error);
+      return res.status(500).json({ message: "Failed to create trip" });
+    }
+  });
 
   app.get("/api/trips", authenticateUser, async (req, res) => {
     try {

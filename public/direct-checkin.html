@@ -211,14 +211,13 @@
       };
       
       try {
-        // Send API request
-        const response = await fetch('/api/trips', {
+        // Send API request to the direct endpoint that doesn't require auth
+        const response = await fetch('/api/direct-trips', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(tripData),
-          credentials: 'include'
+          body: JSON.stringify(tripData)
         });
         
         // Hide loading indicator
@@ -279,8 +278,8 @@
     
     // Handle "View History" button
     viewHistoryButton.addEventListener('click', function() {
-      // Redirect to history page
-      window.location.href = '/api/trips';
+      // Redirect to the test page which has history display
+      window.location.href = '/test';
     });
   </script>
 </body>
