@@ -158,6 +158,21 @@ export class DatabaseStorage implements IStorage {
         );
       `);
       
+      // Create bus_ratings table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS bus_ratings (
+          id SERIAL PRIMARY KEY,
+          driver_id INTEGER NOT NULL,
+          rider_id TEXT NOT NULL,
+          trip_id INTEGER,
+          comfort_rating INTEGER NOT NULL,
+          cleanliness_rating INTEGER NOT NULL,
+          overall_rating INTEGER NOT NULL,
+          comment TEXT,
+          timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+        );
+      `);
+      
       console.log("Database schema created successfully");
     } catch (error) {
       console.error("Error creating database schema:", error);
@@ -535,6 +550,105 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting bus location history:", error);
       return [];
+    }
+  }
+
+  // Create a new bus rating
+  async createBusRating(rating: InsertBusRating): Promise<BusRating> {
+    try {
+      console.log("Creating bus rating with data:", rating);
+      
+      // Insert with current timestamp
+      const [busRating] = await db
+        .insert(busRatings)
+        .values({
+          ...rating,
+          timestamp: new Date()
+        })
+        .returning();
+      
+      console.log("Bus rating created successfully:", busRating);
+      return busRating;
+    } catch (error) {
+      console.error("Error creating bus rating:", error);
+      throw error;
+    }
+  }
+
+  // Get bus rating by ID
+  async getBusRating(id: number): Promise<BusRating | undefined> {
+    try {
+      const [rating] = await db.select().from(busRatings).where(eq(busRatings.id, id));
+      return rating;
+    } catch (error) {
+      console.error("Error getting bus rating by ID:", error);
+      return undefined;
+    }
+  }
+
+  // Get ratings for a specific driver
+  async getBusRatingsByDriverId(driverId: number, limit: number = 50): Promise<BusRating[]> {
+    try {
+      return await db
+        .select()
+        .from(busRatings)
+        .where(eq(busRatings.driverId, driverId))
+        .orderBy(desc(busRatings.timestamp))
+        .limit(limit);
+    } catch (error) {
+      console.error("Error getting ratings for driver:", error);
+      return [];
+    }
+  }
+
+  // Get ratings submitted by a specific rider
+  async getBusRatingsByRiderId(riderId: string): Promise<BusRating[]> {
+    try {
+      return await db
+        .select()
+        .from(busRatings)
+        .where(eq(busRatings.riderId, riderId))
+        .orderBy(desc(busRatings.timestamp));
+    } catch (error) {
+      console.error("Error getting ratings by rider:", error);
+      return [];
+    }
+  }
+
+  // Get rating statistics for a driver
+  async getBusRatingStats(driverId: number): Promise<{
+    averageComfort: number;
+    averageCleanliness: number;
+    averageOverall: number;
+    totalRatings: number;
+  }> {
+    try {
+      // Query for calculating averages and count
+      const [result] = await db
+        .select({
+          averageComfort: avg(busRatings.comfortRating),
+          averageCleanliness: avg(busRatings.cleanlinessRating),
+          averageOverall: avg(busRatings.overallRating),
+          totalRatings: sql<number>`count(*)`.as('total_ratings')
+        })
+        .from(busRatings)
+        .where(eq(busRatings.driverId, driverId));
+      
+      // Format and handle null values
+      return {
+        averageComfort: result.averageComfort ? parseFloat(result.averageComfort.toFixed(1)) : 0,
+        averageCleanliness: result.averageCleanliness ? parseFloat(result.averageCleanliness.toFixed(1)) : 0,
+        averageOverall: result.averageOverall ? parseFloat(result.averageOverall.toFixed(1)) : 0,
+        totalRatings: result.totalRatings || 0
+      };
+    } catch (error) {
+      console.error("Error getting rating statistics:", error);
+      return {
+        averageComfort: 0,
+        averageCleanliness: 0,
+        averageOverall: 0,
+        totalRatings: 0
+      };
     }
   }
 }
