@@ -30,6 +30,24 @@
       display: flex;
       align-items: center;
     }
+    .nav-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .nav-link {
+      text-decoration: none;
+      background-color: #2563eb;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 5px;
+      font-weight: 500;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    .nav-link:hover {
+      background-color: #1d4ed8;
+    }
     h1 {
       margin: 0;
       color: #2563eb;
@@ -216,6 +234,11 @@
         <div>
           <h1>Transportation Tracking System</h1>
           <h2 style="margin-top: 5px; font-size: 16px; color: #4b5563;">Driver Check-In</h2>
+          <div class="nav-links">
+            <a href="/driver-checkin" class="nav-link">Check-In</a>
+            <a href="/driver-ratings" class="nav-link">My Ratings</a>
+            <a href="/bus-tracking" class="nav-link">Bus Map</a>
+          </div>
         </div>
       </div>
       <button id="logout-button" class="logout-button">Logout</button>
