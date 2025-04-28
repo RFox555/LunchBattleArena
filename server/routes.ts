@@ -11,7 +11,7 @@ import { WebSocketServer } from "ws";
 declare module 'express-session' {
   interface SessionData {
     userId?: number;
-    userType?: 'driver' | 'rider';
+    userType?: 'driver' | 'rider'; // 'rider' represents employees in the database
   }
 }
 
@@ -119,11 +119,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username already exists" });
       }
       
-      // Check for existing rider ID
+      // Check for existing employee ID (stored as rider ID in database)
       if (userData.userType === "rider" && userData.riderId) {
-        const existingRider = await storage.getUserByRiderId(userData.riderId);
-        if (existingRider) {
-          return res.status(400).json({ message: "This Rider ID is already in use. Please choose another one." });
+        const existingEmployee = await storage.getUserByRiderId(userData.riderId);
+        if (existingEmployee) {
+          return res.status(400).json({ message: "This Employee ID is already in use. Please choose another one." });
         }
       }
       
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { riderId } = req.params;
       if (!riderId || typeof riderId !== 'string') {
-        return res.status(400).json({ message: "Invalid rider ID" });
+        return res.status(400).json({ message: "Invalid employee ID" });
       }
 
       // Find the employee (stored as rider in database)
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
-      console.error("Error looking up rider:", error);
+      console.error("Error looking up employee:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -239,13 +239,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { riderId, location, note } = req.body;
       
       if (!riderId) {
-        return res.status(400).json({ message: "Rider ID is required" });
+        return res.status(400).json({ message: "Employee ID is required" });
       }
       
-      // Check if rider exists
-      const rider = await storage.getUserByRiderId(riderId);
-      if (!rider) {
-        return res.status(404).json({ message: "Rider not found" });
+      // Check if employee exists (stored as rider in database)
+      const employee = await storage.getUserByRiderId(riderId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
       }
       
       // Create the trip with minimal validation
@@ -273,13 +273,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { riderId, location, note } = req.body;
       
       if (!riderId) {
-        return res.status(400).json({ message: "Rider ID is required" });
+        return res.status(400).json({ message: "Employee ID is required" });
       }
       
-      // Check if rider exists
-      const rider = await storage.getUserByRiderId(riderId);
-      if (!rider) {
-        return res.status(404).json({ message: "Rider not found" });
+      // Check if employee exists (stored as rider in database)
+      const employee = await storage.getUserByRiderId(riderId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
       }
       
       // Get the first driver from the system
@@ -315,6 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session.userType === "driver") {
         trips = await storage.getTripsByDriverId(req.session.userId!);
       } else if (req.session.userType === "rider") {
+        // "rider" user type represents employees in the database
         const user = await storage.getUser(req.session.userId!);
         if (user?.riderId) {
           trips = await storage.getTripsByRiderId(user.riderId);
