@@ -217,6 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { riderId, location, note } = req.body;
       
       if (!riderId) {
+        console.log("Check-in failed: No rider ID provided");
         return res.status(400).json({ message: "Rider ID is required" });
       }
       
@@ -233,19 +234,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         driverId: req.session.userId 
       });
       
-      const trip = await storage.createTrip({
-        riderId,
-        driverId: req.session.userId!,
-        location: location || null,
-        note: note || null
-      });
-      
-      console.log("Check-in successful, trip created", { tripId: trip.id });
-      return res.status(201).json(trip);
+      try {
+        // Validate the trip data against our schema
+        const tripData = insertTripSchema.parse({
+          riderId,
+          driverId: req.session.userId,
+          location: location || null,
+          note: note || null
+        });
+        
+        console.log("Trip data validated", tripData);
+        
+        // Create the trip
+        const trip = await storage.createTrip(tripData);
+        console.log("Check-in successful, trip created", { tripId: trip.id });
+        
+        // Return the created trip
+        return res.status(201).json(trip);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          console.log("Check-in validation failed:", validationError.errors);
+          return res.status(400).json({ message: validationError.errors });
+        }
+        throw validationError;
+      }
     } catch (error) {
       console.error("Check-in failed with error:", error);
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: error.errors });
+      if (error instanceof Error) {
+        return res.status(500).json({ message: error.message });
       }
       return res.status(500).json({ message: "Internal server error" });
     }
