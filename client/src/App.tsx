@@ -11,6 +11,7 @@ import DriverDashboard from "@/pages/driver/dashboard";
 import DriverScan from "@/pages/driver/scan";
 import DriverHistory from "@/pages/driver/history";
 import CheckIn from "@/pages/driver/check-in";
+import SimpleCheckIn from "@/pages/simple-check-in";
 import RiderDashboard from "@/pages/rider/dashboard";
 import RiderHistory from "@/pages/rider/history";
 import AuthRoute from "@/components/layout/AuthLayout";
