@@ -635,10 +635,14 @@ export class DatabaseStorage implements IStorage {
         .where(eq(busRatings.driverId, driverId));
       
       // Format and handle null values
+      const comfortAvg = result.averageComfort ? parseFloat(String(result.averageComfort)) : 0;
+      const cleanlinessAvg = result.averageCleanliness ? parseFloat(String(result.averageCleanliness)) : 0;
+      const overallAvg = result.averageOverall ? parseFloat(String(result.averageOverall)) : 0;
+        
       return {
-        averageComfort: result.averageComfort ? parseFloat(result.averageComfort.toFixed(1)) : 0,
-        averageCleanliness: result.averageCleanliness ? parseFloat(result.averageCleanliness.toFixed(1)) : 0,
-        averageOverall: result.averageOverall ? parseFloat(result.averageOverall.toFixed(1)) : 0,
+        averageComfort: Math.round(comfortAvg * 10) / 10, // Round to 1 decimal place
+        averageCleanliness: Math.round(cleanlinessAvg * 10) / 10,
+        averageOverall: Math.round(overallAvg * 10) / 10,
         totalRatings: result.totalRatings || 0
       };
     } catch (error) {

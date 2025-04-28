@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertUserSchema, insertTripSchema, loginSchema, checkInSchema, 
-  insertBusLocationSchema, updateBusLocationSchema,
-  type Trip, type BusLocation 
+  insertBusLocationSchema, updateBusLocationSchema, insertBusRatingSchema, busRatingFormSchema,
+  type Trip, type BusLocation, type BusRating
 } from "@shared/schema";
 import express from "express";
 import session from "express-session";
@@ -543,6 +543,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(locations);
     } catch (error) {
       console.error("Error fetching bus location history:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Bus Rating API Endpoints
+  // Create a new bus rating
+  app.post("/api/bus-ratings", authenticateUser, async (req, res) => {
+    try {
+      // Validate rating data
+      const ratingData = busRatingFormSchema.parse(req.body);
+      
+      // Get the current user
+      const user = await storage.getUser(req.session.userId!);
+      if (!user || !user.riderId) {
+        return res.status(400).json({ message: "Only employees can submit ratings" });
+      }
+      
+      // Create the full rating data
+      const fullRatingData = {
+        driverId: ratingData.driverId,
+        riderId: user.riderId,
+        tripId: req.body.tripId, // Optional field
+        comfortRating: ratingData.comfortRating,
+        cleanlinessRating: ratingData.cleanlinessRating,
+        overallRating: ratingData.overallRating,
+        comment: ratingData.comment
+      };
+      
+      // Create the rating
+      const rating = await storage.createBusRating(fullRatingData);
+      console.log("Bus rating created successfully", { ratingId: rating.id });
+      
+      return res.status(201).json(rating);
+    } catch (error) {
+      console.error("Bus rating creation error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid rating data", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get ratings for a specific driver
+  app.get("/api/bus-ratings/driver/:driverId", authenticateUser, async (req, res) => {
+    try {
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      const ratings = await storage.getBusRatingsByDriverId(driverId);
+      return res.status(200).json(ratings);
+    } catch (error) {
+      console.error("Error fetching driver ratings:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get rating statistics for a driver
+  app.get("/api/bus-ratings/stats/:driverId", async (req, res) => {
+    try {
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      const stats = await storage.getBusRatingStats(driverId);
+      return res.status(200).json(stats);
+    } catch (error) {
+      console.error("Error fetching rating statistics:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get ratings submitted by the current user
+  app.get("/api/bus-ratings/my-ratings", authenticateUser, async (req, res) => {
+    try {
+      // Get the current user
+      const user = await storage.getUser(req.session.userId!);
+      if (!user || !user.riderId || user.userType !== "rider") {
+        return res.status(400).json({ message: "Only employees can view their ratings" });
+      }
+      
+      const ratings = await storage.getBusRatingsByRiderId(user.riderId);
+      return res.status(200).json(ratings);
+    } catch (error) {
+      console.error("Error fetching user ratings:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
