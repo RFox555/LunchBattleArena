@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Tracking - Transportation Tracking System</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    
+    body {
+      background-color: #f5f5f5;
+    }
+    
+    header {
+      background: linear-gradient(135deg, #2b5876, #4e4376);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    header h1 {
+      font-size: 1.5rem;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    
+    .map-container {
+      height: calc(100vh - 180px);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+    }
+    
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    
+    .info-panel {
+      background-color: white;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+    }
+    
+    .info-panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      color: #2b5876;
+    }
+    
+    .bus-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    
+    .bus-card {
+      background-color: #f0f4f8;
+      border-radius: 8px;
+      padding: 0.75rem;
+      flex: 1;
+      min-width: 250px;
+      border-left: 4px solid #2b5876;
+    }
+    
+    .bus-card h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      color: #4e4376;
+    }
+    
+    .bus-card p {
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+      color: #666;
+    }
+    
+    .bus-card .status {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    
+    .bus-card .status.active {
+      background-color: #e3f8e9;
+      color: #0a8534;
+    }
+    
+    .bus-card .status.inactive {
+      background-color: #f8e3e3;
+      color: #c41e1e;
+    }
+    
+    .nav-bar {
+      background-color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .nav-bar a {
+      color: #4e4376;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    
+    .nav-bar a:hover {
+      background-color: #f0f4f8;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .controls button {
+      background: linear-gradient(135deg, #2b5876, #4e4376);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+    
+    .controls button:hover {
+      opacity: 0.9;
+    }
+    
+    .driver-controls {
+      background-color: white;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      display: none;
+    }
+    
+    .driver-controls h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      color: #2b5876;
+    }
+    
+    .driver-controls .form-group {
+      margin-bottom: 0.75rem;
+    }
+    
+    .driver-controls label {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: #4e4376;
+      font-weight: bold;
+    }
+    
+    .driver-controls input, .driver-controls select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    .driver-controls button {
+      background: linear-gradient(135deg, #2b5876, #4e4376);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.3s;
+      margin-top: 0.5rem;
+    }
+    
+    .driver-controls button:hover {
+      opacity: 0.9;
+    }
+    
+    @media (max-width: 768px) {
+      .map-container {
+        height: 50vh;
+      }
+      
+      .bus-card {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Transportation Tracking System - Bus Tracking</h1>
+  </header>
+  
+  <div class="container">
+    <div class="nav-bar">
+      <div>
+        <a href="/">Home</a>
+        <a href="/bus-tracking">Bus Tracking</a>
+      </div>
+      <div>
+        <a href="/login.html" id="loginLink">Login</a>
+        <a href="#" id="logoutLink" style="display: none;">Logout</a>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <button id="refreshBtn">Refresh Bus Locations</button>
+      <button id="trackBtn">Track My Location</button>
+      <button id="centerMapBtn">Center Map</button>
+    </div>
+    
+    <div class="driver-controls" id="driverControls">
+      <h2>Update Bus Location</h2>
+      <form id="locationForm">
+        <div class="form-group">
+          <label for="routeName">Route Name</label>
+          <input type="text" id="routeName" placeholder="Enter route name (e.g., Main St to Downtown)">
+        </div>
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="active">Active - On Route</option>
+            <option value="break">On Break</option>
+            <option value="inactive">Inactive - Off Duty</option>
+          </select>
+        </div>
+        <button type="submit">Update Location</button>
+      </form>
+    </div>
+    
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
+    
+    <div class="info-panel">
+      <h2>Active Buses</h2>
+      <div class="bus-info" id="busInfo">
+        <!-- Bus information will be displayed here dynamically -->
+        <div class="bus-card">
+          <h3>Loading bus information...</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize map
+    const map = L.map('map').setView([40.7128, -74.0060], 13); // Default to NYC, will be updated based on tracked buses
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Map data
+    let busMarkers = {};
+    let userLocationMarker = null;
+    let userIsDriver = false;
+    let userId = null;
+    let watchId = null;
+    let activeWatchingPosition = false;
+    let webSocket = null;
+    
+    // DOM elements
+    const busInfo = document.getElementById('busInfo');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const trackBtn = document.getElementById('trackBtn');
+    const centerMapBtn = document.getElementById('centerMapBtn');
+    const loginLink = document.getElementById('loginLink');
+    const logoutLink = document.getElementById('logoutLink');
+    const driverControls = document.getElementById('driverControls');
+    const locationForm = document.getElementById('locationForm');
+    const routeNameInput = document.getElementById('routeName');
+    const statusSelect = document.getElementById('status');
+    
+    // Check if user is authenticated
+    async function checkAuthentication() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const user = await response.json();
+          userId = user.id;
+          userIsDriver = user.userType === 'driver';
+          
+          // Update UI based on authentication
+          loginLink.style.display = 'none';
+          logoutLink.style.display = 'inline';
+          
+          // Show driver controls if user is a driver
+          if (userIsDriver) {
+            driverControls.style.display = 'block';
+            // Automatically start tracking for drivers
+            startTracking();
+          }
+          
+          return true;
+        } else {
+          return false;
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        return false;
+      }
+    }
+    
+    // Fetch all active bus locations
+    async function fetchBusLocations() {
+      try {
+        const response = await fetch('/api/bus-locations/active');
+        if (response.ok) {
+          const locations = await response.json();
+          updateBusMarkers(locations);
+          updateBusInfo(locations);
+          return locations;
+        } else {
+          console.error('Failed to fetch bus locations');
+          busInfo.innerHTML = '<div class="bus-card"><h3>Error loading bus information</h3><p>Please try again later.</p></div>';
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching bus locations:', error);
+        busInfo.innerHTML = '<div class="bus-card"><h3>Error loading bus information</h3><p>Please try again later.</p></div>';
+        return [];
+      }
+    }
+    
+    // Update bus markers on map
+    function updateBusMarkers(locations) {
+      // Clear existing markers
+      Object.values(busMarkers).forEach(marker => {
+        if (marker !== userLocationMarker) {
+          map.removeLayer(marker);
+        }
+      });
+      
+      busMarkers = {};
+      
+      if (locations.length === 0) {
+        busInfo.innerHTML = '<div class="bus-card"><h3>No active buses</h3><p>There are no active buses at this time.</p></div>';
+        return;
+      }
+      
+      // Add new markers
+      locations.forEach(location => {
+        const busIcon = L.divIcon({
+          className: 'bus-icon',
+          html: `<div style="background-color: #2b5876; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">🚌</div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        });
+        
+        const marker = L.marker([location.latitude, location.longitude], { icon: busIcon }).addTo(map);
+        
+        // Calculate speed in mph if available
+        let speedText = '';
+        if (location.speed) {
+          speedText = `${Math.round(location.speed)} mph`;
+        }
+        
+        // Create popup with bus info
+        marker.bindPopup(`
+          <div style="text-align: center;">
+            <strong>Bus Driver ID: ${location.driverId}</strong><br>
+            ${location.routeName ? 'Route: ' + location.routeName + '<br>' : ''}
+            ${speedText ? 'Speed: ' + speedText + '<br>' : ''}
+            Status: ${location.status}<br>
+            Last updated: ${new Date(location.timestamp).toLocaleTimeString()}
+          </div>
+        `);
+        
+        busMarkers[location.driverId] = marker;
+      });
+      
+      // Center map if there are bus locations
+      if (locations.length > 0 && !userLocationMarker) {
+        const firstBus = locations[0];
+        map.setView([firstBus.latitude, firstBus.longitude], 13);
+      }
+    }
+    
+    // Update bus information panel
+    function updateBusInfo(locations) {
+      if (locations.length === 0) {
+        busInfo.innerHTML = '<div class="bus-card"><h3>No active buses</h3><p>There are no active buses at this time.</p></div>';
+        return;
+      }
+      
+      let html = '';
+      
+      locations.forEach(location => {
+        const statusClass = location.status === 'active' ? 'active' : 'inactive';
+        
+        html += `
+          <div class="bus-card">
+            <h3>Bus Driver ID: ${location.driverId}</h3>
+            ${location.routeName ? `<p><strong>Route:</strong> ${location.routeName}</p>` : ''}
+            <p><strong>Location:</strong> ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}</p>
+            ${location.speed ? `<p><strong>Speed:</strong> ${Math.round(location.speed)} mph</p>` : ''}
+            <p><strong>Last Updated:</strong> ${new Date(location.timestamp).toLocaleTimeString()}</p>
+            <span class="status ${statusClass}">${location.status.toUpperCase()}</span>
+          </div>
+        `;
+      });
+      
+      busInfo.innerHTML = html;
+    }
+    
+    // Start tracking user location (for drivers)
+    function startTracking() {
+      if (!userIsDriver) {
+        alert('Only drivers can broadcast their location!');
+        return;
+      }
+      
+      if (activeWatchingPosition) {
+        alert('Already tracking your location!');
+        return;
+      }
+      
+      if ('geolocation' in navigator) {
+        activeWatchingPosition = true;
+        trackBtn.innerText = 'Stop Tracking';
+        
+        watchId = navigator.geolocation.watchPosition(position => {
+          const { latitude, longitude } = position.coords;
+          let speed = position.coords.speed;
+          
+          // Convert from m/s to mph if speed is available
+          if (speed !== null) {
+            speed = speed * 2.23694; // Convert m/s to mph
+          }
+          
+          // Calculate heading from position change if available
+          let heading = position.coords.heading;
+          
+          // Update user location on map
+          if (userLocationMarker) {
+            userLocationMarker.setLatLng([latitude, longitude]);
+          } else {
+            const userIcon = L.divIcon({
+              className: 'user-icon',
+              html: `<div style="background-color: #c41e1e; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">🚌</div>`,
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            });
+            
+            userLocationMarker = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+            userLocationMarker.bindPopup('Your current location (updating)');
+            
+            // Center map on user's location
+            map.setView([latitude, longitude], 16);
+          }
+          
+          // Send location update to server
+          const routeName = routeNameInput.value;
+          const status = statusSelect.value;
+          
+          updateDriverLocation(latitude, longitude, heading, speed, routeName, status);
+        }, error => {
+          console.error('Error getting position:', error);
+          alert(`Error getting your position: ${error.message}`);
+          stopTracking();
+        }, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000
+        });
+      } else {
+        alert('Geolocation is not supported by your browser.');
+      }
+    }
+    
+    // Stop tracking user location
+    function stopTracking() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      
+      activeWatchingPosition = false;
+      trackBtn.innerText = 'Track My Location';
+      
+      // Remove user location marker
+      if (userLocationMarker) {
+        map.removeLayer(userLocationMarker);
+        userLocationMarker = null;
+      }
+    }
+    
+    // Send driver location update to server
+    async function updateDriverLocation(latitude, longitude, heading, speed, routeName, status) {
+      if (!userIsDriver || !userId) {
+        return;
+      }
+      
+      try {
+        const locationData = {
+          latitude,
+          longitude,
+          heading: heading || null,
+          speed: speed || null,
+          routeName: routeName || null,
+          status: status || 'active'
+        };
+        
+        const response = await fetch('/api/bus-locations', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(locationData)
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to update bus location');
+        }
+      } catch (error) {
+        console.error('Error updating bus location:', error);
+      }
+    }
+    
+    // Center map on user location or all buses
+    function centerMap() {
+      if (userLocationMarker) {
+        map.setView(userLocationMarker.getLatLng(), 16);
+      } else {
+        const busLocations = Object.values(busMarkers);
+        if (busLocations.length > 0) {
+          const bounds = L.latLngBounds(busLocations.map(marker => marker.getLatLng()));
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      }
+    }
+    
+    // Set up WebSocket for real-time updates
+    function setupWebSocket() {
+      // Close existing connection if any
+      if (webSocket && webSocket.readyState !== WebSocket.CLOSED) {
+        webSocket.close();
+      }
+      
+      // Create new WebSocket connection
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      webSocket = new WebSocket(wsUrl);
+      
+      webSocket.onopen = function() {
+        console.log('WebSocket connection established');
+      };
+      
+      webSocket.onmessage = function(event) {
+        try {
+          const message = JSON.parse(event.data);
+          
+          if (message.type === 'location_update') {
+            // Update single bus marker
+            const location = message.data;
+            
+            // Remove old marker if exists
+            if (busMarkers[location.driverId]) {
+              map.removeLayer(busMarkers[location.driverId]);
+            }
+            
+            // Create bus icon
+            const busIcon = L.divIcon({
+              className: 'bus-icon',
+              html: `<div style="background-color: #2b5876; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">🚌</div>`,
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            });
+            
+            // Add new marker
+            const marker = L.marker([location.latitude, location.longitude], { icon: busIcon }).addTo(map);
+            
+            // Calculate speed in mph if available
+            let speedText = '';
+            if (location.speed) {
+              speedText = `${Math.round(location.speed)} mph`;
+            }
+            
+            // Create popup with bus info
+            marker.bindPopup(`
+              <div style="text-align: center;">
+                <strong>Bus Driver ID: ${location.driverId}</strong><br>
+                ${location.routeName ? 'Route: ' + location.routeName + '<br>' : ''}
+                ${speedText ? 'Speed: ' + speedText + '<br>' : ''}
+                Status: ${location.status}<br>
+                Last updated: ${new Date(location.timestamp).toLocaleTimeString()}
+              </div>
+            `);
+            
+            busMarkers[location.driverId] = marker;
+            
+            // Refresh all bus information
+            fetchBusLocations();
+          }
+        } catch (error) {
+          console.error('Error handling WebSocket message:', error);
+        }
+      };
+      
+      webSocket.onclose = function() {
+        console.log('WebSocket connection closed. Retrying in 5 seconds...');
+        setTimeout(setupWebSocket, 5000);
+      };
+      
+      webSocket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+      };
+    }
+    
+    // Event listeners
+    refreshBtn.addEventListener('click', fetchBusLocations);
+    
+    trackBtn.addEventListener('click', function() {
+      if (activeWatchingPosition) {
+        stopTracking();
+      } else {
+        startTracking();
+      }
+    });
+    
+    centerMapBtn.addEventListener('click', centerMap);
+    
+    logoutLink.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          stopTracking();
+          
+          userId = null;
+          userIsDriver = false;
+          driverControls.style.display = 'none';
+          
+          loginLink.style.display = 'inline';
+          logoutLink.style.display = 'none';
+          
+          alert('Logged out successfully');
+          
+          // Refresh bus locations (to remove user's bus)
+          fetchBusLocations();
+        } else {
+          alert('Failed to logout');
+        }
+      } catch (error) {
+        console.error('Error logging out:', error);
+        alert('Error logging out');
+      }
+    });
+    
+    locationForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (!userIsDriver || !activeWatchingPosition) {
+        alert('You must be a driver and actively tracking your location to update.');
+        return;
+      }
+      
+      // Force the browser to get a new position
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const { latitude, longitude } = position.coords;
+          let speed = position.coords.speed;
+          
+          // Convert from m/s to mph if speed is available
+          if (speed !== null) {
+            speed = speed * 2.23694; // Convert m/s to mph
+          }
+          
+          const routeName = routeNameInput.value;
+          const status = statusSelect.value;
+          
+          updateDriverLocation(latitude, longitude, position.coords.heading, speed, routeName, status);
+        }, error => {
+          console.error('Error getting position:', error);
+          alert(`Error getting your position: ${error.message}`);
+        }, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000
+        });
+      }
+    });
+    
+    // Initialize
+    async function initialize() {
+      await checkAuthentication();
+      await fetchBusLocations();
+      setupWebSocket();
+    }
+    
+    // Start the application
+    initialize();
+  </script>
+</body>
+</html>

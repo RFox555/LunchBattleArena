@@ -1,11 +1,15 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertTripSchema, loginSchema, checkInSchema, type Trip } from "@shared/schema";
+import { 
+  insertUserSchema, insertTripSchema, loginSchema, checkInSchema, 
+  insertBusLocationSchema, updateBusLocationSchema,
+  type Trip, type BusLocation 
+} from "@shared/schema";
 import express from "express";
 import session from "express-session";
 import { ZodError } from "zod";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 
 // Extend the Express session with our custom properties
 declare module 'express-session' {
@@ -411,6 +415,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Driver check-in page with QR scanner
   app.get('/driver-checkin', (req, res) => {
     res.sendFile('driver-checkin.html', { root: './public' });
+  });
+  
+  // Bus tracking page
+  app.get('/bus-tracking', (req, res) => {
+    res.sendFile('bus-tracking.html', { root: './public' });
+  });
+  
+  // Bus Location API Endpoints
+  // Create a new bus location (for drivers)
+  app.post("/api/bus-locations", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can update bus locations
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can update bus locations" });
+      }
+      
+      // Validate location data
+      const locationData = insertBusLocationSchema.parse({
+        ...req.body,
+        driverId: req.session.userId
+      });
+      
+      // Create the location record
+      const location = await storage.createBusLocation(locationData);
+      console.log("Bus location created successfully", { locationId: location.id });
+      
+      // Broadcast location update to all connected WebSocket clients
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'location_update',
+            data: location
+          }));
+        }
+      });
+      
+      return res.status(201).json(location);
+    } catch (error) {
+      console.error("Bus location creation error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid location data", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Update a bus location
+  app.patch("/api/bus-locations", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can update bus locations
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can update bus locations" });
+      }
+      
+      // Validate location data
+      const locationData = updateBusLocationSchema.parse(req.body);
+      
+      // Update location
+      const location = await storage.updateBusLocation(req.session.userId!, locationData);
+      if (!location) {
+        return res.status(404).json({ message: "Failed to update bus location" });
+      }
+      
+      // Broadcast location update to all connected WebSocket clients
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'location_update',
+            data: location
+          }));
+        }
+      });
+      
+      return res.status(200).json(location);
+    } catch (error) {
+      console.error("Bus location update error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid location data", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get latest bus location for a driver
+  app.get("/api/bus-locations/driver/:driverId", async (req, res) => {
+    try {
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      const location = await storage.getLatestBusLocation(driverId);
+      if (!location) {
+        return res.status(404).json({ message: "No location found for this driver" });
+      }
+      
+      return res.status(200).json(location);
+    } catch (error) {
+      console.error("Error fetching bus location:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get all active bus locations
+  app.get("/api/bus-locations/active", async (req, res) => {
+    try {
+      const locations = await storage.listActiveBusLocations();
+      return res.status(200).json(locations);
+    } catch (error) {
+      console.error("Error fetching active bus locations:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get location history for a driver
+  app.get("/api/bus-locations/history/:driverId", authenticateUser, async (req, res) => {
+    try {
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      
+      const locations = await storage.getBusLocationHistory(driverId, limit);
+      return res.status(200).json(locations);
+    } catch (error) {
+      console.error("Error fetching bus location history:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
   });
   
   // Create HTTP server
