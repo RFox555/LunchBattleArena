@@ -60,12 +60,20 @@ export default function DriverScan() {
       setCheckedIn(false);
     },
     onError: (error: any) => {
+      console.error("Rider lookup error:", error);
       setRider(null);
-      setSearchError("Rider not found. Please check the ID and try again.");
+      
+      let errorMsg = "Rider not found. Please check the ID and try again.";
+      
+      if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      setSearchError(errorMsg);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Rider not found. Please check the ID and try again.",
+        description: errorMsg,
       });
     },
   });
@@ -73,8 +81,15 @@ export default function DriverScan() {
   // Check-in mutation
   const checkInMutation = useMutation({
     mutationFn: async (data: { riderId: string; location: string; note?: string }) => {
-      const res = await apiRequest("POST", "/api/trips", data);
-      return res.json();
+      console.log("Sending check-in data:", data);
+      try {
+        const res = await apiRequest("POST", "/api/trips", data);
+        console.log("Check-in response status:", res.status);
+        return res.json();
+      } catch (error) {
+        console.error("Error in check-in API request:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
@@ -86,10 +101,24 @@ export default function DriverScan() {
       });
     },
     onError: (error: any) => {
+      console.error("Check-in error:", error);
+      let errorMsg = "There was an error checking in the rider. Please try again.";
+      
+      if (error.message) {
+        errorMsg = error.message;
+      } else if (error.response) {
+        try {
+          const errorData = JSON.parse(error.response);
+          errorMsg = errorData.message || errorMsg;
+        } catch (e) {
+          // Parsing failed, use default message
+        }
+      }
+      
       toast({
         variant: "destructive",
         title: "Check-in failed",
-        description: "There was an error checking in the rider. Please try again.",
+        description: errorMsg,
       });
     },
   });
