@@ -326,6 +326,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add direct routes for HTML pages
+  
+  // Home page (default route)
+  app.get('/', (req, res) => {
+    res.sendFile('index.html', { root: './public' });
+  });
+  
+  // Test page
   app.get('/test', (req, res) => {
     res.sendFile('direct-test.html', { root: './public' });
   });
