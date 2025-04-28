@@ -226,8 +226,8 @@
       <div id="manual-tab" class="tab-content">
         <form id="check-in-form">
           <div class="form-group">
-            <label for="rider-id">Employee ID:</label>
-            <input type="text" id="rider-id" name="riderId" maxlength="5" pattern="[0-9]{5}" placeholder="Enter 5-digit employee ID" required>
+            <label for="employee-id">Employee ID:</label>
+            <input type="text" id="employee-id" name="riderId" maxlength="5" pattern="[0-9]{5}" placeholder="Enter 5-digit employee ID" required>
           </div>
           
           <div class="form-group">
@@ -255,7 +255,7 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Employee ID:</span>
-          <span id="trip-rider"></span>
+          <span id="trip-employee"></span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Location:</span>
@@ -292,7 +292,7 @@
     const errorMessage = document.getElementById('error-message');
     const tripDetails = document.getElementById('trip-details');
     const tripId = document.getElementById('trip-id');
-    const tripRider = document.getElementById('trip-rider');
+    const tripEmployee = document.getElementById('trip-employee');
     const tripLocation = document.getElementById('trip-location');
     const tripTime = document.getElementById('trip-time');
     const tripNote = document.getElementById('trip-note');
@@ -371,7 +371,7 @@
       stopScanner();
       
       // Process the QR code result
-      checkInRider(riderId.trim());
+      checkInEmployee(riderId.trim());
     }
     
     // Handle scan errors
@@ -380,8 +380,8 @@
       console.log(`QR Code scanning failure: ${error}`);
     }
     
-    // Check in a rider
-    async function checkInRider(riderId, location = 'Bus Stop', note = '') {
+    // Check in an employee
+    async function checkInEmployee(riderId, location = 'Bus Stop', note = '') {
       // Hide previous messages
       successMessage.style.display = 'none';
       errorMessage.style.display = 'none';
@@ -420,7 +420,7 @@
           
           // Update trip details
           tripId.textContent = trip.id;
-          tripRider.textContent = trip.riderId;
+          tripEmployee.textContent = trip.riderId;
           tripLocation.textContent = trip.location;
           tripTime.textContent = formatDateTime(trip.timestamp);
           tripNote.textContent = trip.note || 'No note provided';
@@ -564,7 +564,7 @@
       e.preventDefault();
       
       const formData = new FormData(checkInForm);
-      checkInRider(
+      checkInEmployee(
         formData.get('riderId'),
         formData.get('location'),
         formData.get('note')
@@ -575,7 +575,7 @@
     qrManualSubmit.addEventListener('click', () => {
       const riderId = qrManualInput.value.trim();
       if (riderId) {
-        checkInRider(riderId);
+        checkInEmployee(riderId);
         qrManualInput.value = ''; // Clear the input field
       } else {
         errorMessage.textContent = 'Please enter a valid Employee ID';
