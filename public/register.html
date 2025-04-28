@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register - Bus Tracker</title>
+  <title>Register - Transportation Tracking System</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -116,13 +116,13 @@
       <div class="form-group">
         <label for="userType">Account Type:</label>
         <select id="userType" name="userType" required>
-          <option value="rider">Rider</option>
+          <option value="rider">Employee</option>
           <option value="driver">Driver</option>
         </select>
       </div>
       
       <div class="form-group rider-id-field" id="rider-id-container">
-        <label for="riderId">Your 5-Digit Rider ID:</label>
+        <label for="riderId">Your 5-Digit Employee ID:</label>
         <input type="text" id="riderId" name="riderId" maxlength="5" pattern="[0-9]{5}" title="Please enter a 5-digit number">
         <div class="rider-id-hint">Choose a unique 5-digit number that will be used for check-ins. This cannot be changed later.</div>
       </div>
@@ -178,10 +178,10 @@
         riderId: formData.get('userType') === 'rider' ? formData.get('riderId') : null
       };
       
-      // Validate rider ID if the user is a rider
+      // Validate employee ID if the user is an employee
       if (userData.userType === 'rider') {
         if (!userData.riderId || userData.riderId.length !== 5 || !/^\d+$/.test(userData.riderId)) {
-          errorMessage.textContent = 'Please enter a valid 5-digit Rider ID number';
+          errorMessage.textContent = 'Please enter a valid 5-digit Employee ID number';
           errorMessage.style.display = 'block';
           return;
         }
