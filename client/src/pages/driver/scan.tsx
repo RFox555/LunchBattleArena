@@ -39,6 +39,7 @@ export default function DriverScan() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [checkedIn, setCheckedIn] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isCheckinLoading, setIsCheckinLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("scan");
 
   const form = useForm<z.infer<typeof searchSchema>>({
@@ -101,19 +102,36 @@ export default function DriverScan() {
   const checkInMutation = useMutation({
     mutationFn: async (data: { riderId: string; location: string; note?: string }) => {
       console.log("Sending check-in data:", data);
-      try {
-        // Use the dedicated check-in endpoint
-        const res = await apiRequest("POST", "/api/check-in", data);
-        console.log("Check-in response status:", res.status);
-        return res.json();
-      } catch (error) {
-        console.error("Error in check-in API request:", error);
-        throw error;
+      
+      // Use simple fetch for maximum control
+      const response = await fetch("/api/check-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      
+      console.log("Check-in raw response:", response);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Check-in failed with status:", response.status, errorText);
+        throw new Error(`Check-in failed: ${response.status} ${errorText}`);
       }
+      
+      return response.json();
     },
     onSuccess: () => {
+      // Reset loading state
+      setIsCheckinLoading(false);
+      
+      // Update cache
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips/recent"] });
+      
+      // Show success state
       setCheckedIn(true);
       toast({
         title: "Check-in successful",
@@ -121,6 +139,9 @@ export default function DriverScan() {
       });
     },
     onError: (error: any) => {
+      // Reset loading state
+      setIsCheckinLoading(false);
+      
       console.error("Check-in error:", error);
       let errorMsg = "There was an error checking in the rider. Please try again.";
       
@@ -164,7 +185,7 @@ export default function DriverScan() {
     }
   };
 
-  const handleCheckIn = (data: { location: string; note?: string }) => {
+  const handleCheckIn = async (data: { location: string; note?: string }) => {
     if (!riderId) {
       console.error("Check-in failed: No rider ID provided");
       toast({
@@ -182,14 +203,27 @@ export default function DriverScan() {
       note: data.note
     });
     
+    // Intentionally show loading state even before mutation starts
+    setIsCheckinLoading(true);
+    
+    const checkInData = {
+      riderId,
+      location: data.location,
+      note: data.note || "",
+    };
+    
     try {
-      checkInMutation.mutate({
-        riderId,
-        location: data.location,
-        note: data.note || "",
-      });
+      // Use the mutation to maintain React Query's state management
+      checkInMutation.mutate(checkInData);
     } catch (error) {
       console.error("Error initiating check-in mutation:", error);
+      setIsCheckinLoading(false);
+      
+      toast({
+        variant: "destructive",
+        title: "Check-in failed",
+        description: "There was an error checking in the rider. Please try again.",
+      });
     }
   };
 
