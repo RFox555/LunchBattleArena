@@ -204,16 +204,16 @@
       </div>
       
       <div id="scan-tab" class="tab-content active">
-        <p>Scan the rider's QR code to check them in:</p>
+        <p>Scan the employee's QR code to check them in:</p>
         <div class="scanner-container">
           <div id="reader"></div>
           <button id="start-scan" class="button">Start Scanner</button>
           <button id="stop-scan" class="button" style="display:none; background-color: #e11d48;">Stop Scanner</button>
           
           <div style="margin-top: 20px; text-align: center;">
-            <p>If camera access is not available, you can manually enter the Rider ID below:</p>
+            <p>If camera access is not available, you can manually enter the Employee ID below:</p>
             <div style="display: flex; max-width: 300px; margin: 0 auto;">
-              <input type="text" id="qr-manual-input" placeholder="Enter Rider ID" style="margin-right: 10px;">
+              <input type="text" id="qr-manual-input" placeholder="Enter Employee ID" style="margin-right: 10px;">
               <button id="qr-manual-submit" class="button" style="width: auto; margin: 0;">Submit</button>
             </div>
           </div>
@@ -223,8 +223,8 @@
       <div id="manual-tab" class="tab-content">
         <form id="check-in-form">
           <div class="form-group">
-            <label for="rider-id">Rider ID:</label>
-            <input type="text" id="rider-id" name="riderId" maxlength="5" pattern="[0-9]{5}" placeholder="Enter 5-digit rider ID" required>
+            <label for="rider-id">Employee ID:</label>
+            <input type="text" id="rider-id" name="riderId" maxlength="5" pattern="[0-9]{5}" placeholder="Enter 5-digit employee ID" required>
           </div>
           
           <div class="form-group">
@@ -237,7 +237,7 @@
             <textarea id="note" name="note" placeholder="Add any notes about this trip"></textarea>
           </div>
           
-          <button type="submit" class="button">Check In Rider</button>
+          <button type="submit" class="button">Check In Employee</button>
         </form>
       </div>
       
@@ -251,7 +251,7 @@
           <span id="trip-id"></span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Rider ID:</span>
+          <span class="detail-label">Employee ID:</span>
           <span id="trip-rider"></span>
         </div>
         <div class="detail-row">
@@ -383,9 +383,9 @@
       successMessage.style.display = 'none';
       errorMessage.style.display = 'none';
       
-      // Validate rider ID
+      // Validate employee ID
       if (!riderId || riderId.length !== 5 || !/^\d+$/.test(riderId)) {
-        errorMessage.textContent = 'Invalid rider ID. Please enter a valid 5-digit ID.';
+        errorMessage.textContent = 'Invalid employee ID. Please enter a valid 5-digit ID.';
         errorMessage.style.display = 'block';
         return;
       }
@@ -412,7 +412,7 @@
           console.log('Check-in successful:', trip);
           
           // Show success message
-          successMessage.textContent = `Rider ${trip.riderId} has been successfully checked in!`;
+          successMessage.textContent = `Employee ${trip.riderId} has been successfully checked in!`;
           successMessage.style.display = 'block';
           
           // Update trip details
@@ -438,7 +438,7 @@
           console.error('Check-in failed:', errorData);
           
           // Show error message
-          errorMessage.textContent = errorData.message || 'Failed to check in rider. Please try again.';
+          errorMessage.textContent = errorData.message || 'Failed to check in employee. Please try again.';
           errorMessage.style.display = 'block';
         }
       } catch (error) {
@@ -461,7 +461,7 @@
         <thead>
           <tr>
             <th>Date & Time</th>
-            <th>Rider ID</th>
+            <th>Employee ID</th>
             <th>Location</th>
             <th>Note</th>
           </tr>
@@ -575,7 +575,7 @@
         checkInRider(riderId);
         qrManualInput.value = ''; // Clear the input field
       } else {
-        errorMessage.textContent = 'Please enter a valid Rider ID';
+        errorMessage.textContent = 'Please enter a valid Employee ID';
         errorMessage.style.display = 'block';
       }
     });
