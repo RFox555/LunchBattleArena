@@ -10,6 +10,7 @@ import express from "express";
 import session from "express-session";
 import { ZodError } from "zod";
 import { WebSocketServer, WebSocket } from "ws";
+import path from "path";
 
 // Extend the Express session with our custom properties
 declare module 'express-session' {
@@ -27,21 +28,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "transportation-tracking-system-secret",
-      resave: false,
-      saveUninitialized: false,
+      resave: true,
+      saveUninitialized: true,
       cookie: { 
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        secure: false, // Set to false for both dev and prod to ensure cookies work
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax'
       },
       store: storage.sessionStore
     })
   );
+  
+  // Explicitly serve public static files first
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   // Authentication middleware
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.userId) {
+    if (!req.session || !req.session.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    
+    // Touch the session to keep it active
+    req.session.touch();
+    
+    // Continue to the next middleware/route handler
     next();
   };
 
@@ -67,9 +79,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         riderId: user.riderId
       });
       
-      // Return user data (without password)
-      const { password, ...safeUser } = user;
-      return res.status(200).json(safeUser);
+      // Save the session and wait for it to complete before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Failed to save session" });
+        }
+        
+        // Return user data (without password)
+        const { password, ...safeUser } = user;
+        return res.status(200).json(safeUser);
+      });
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof ZodError) {
@@ -91,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
+    if (!req.session || !req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
@@ -102,9 +122,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
       
+      // Touch the session to keep it active
+      req.session.touch();
+      
       // Return user data (without password)
       const { password, ...safeUser } = user;
-      return res.status(200).json(safeUser);
+      
+      // Save any session changes before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error in /api/auth/me:", err);
+        }
+        return res.status(200).json(safeUser);
+      });
     } catch (error) {
       console.error("Authentication check error:", error);
       return res.status(500).json({ message: "Internal server error" });
