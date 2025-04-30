@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#2563eb" />
+  <circle cx="100" cy="100" r="85" fill="#ffffff" />
+  
+  <!-- Stylized bus shape -->
+  <rect x="45" y="85" width="110" height="50" rx="8" fill="#2563eb" />
+  <rect x="40" y="105" width="120" height="30" rx="5" fill="#2563eb" />
+  
+  <!-- Windows -->
+  <rect x="55" y="92" width="15" height="12" rx="2" fill="#ffffff" />
+  <rect x="80" y="92" width="15" height="12" rx="2" fill="#ffffff" />
+  <rect x="105" y="92" width="15" height="12" rx="2" fill="#ffffff" />
+  <rect x="130" y="92" width="15" height="12" rx="2" fill="#ffffff" />
+  
+  <!-- Wheels -->
+  <circle cx="65" cy="135" r="10" fill="#333333" />
+  <circle cx="65" cy="135" r="5" fill="#666666" />
+  <circle cx="135" cy="135" r="10" fill="#333333" />
+  <circle cx="135" cy="135" r="5" fill="#666666" />
+  
+  <!-- Front lights -->
+  <rect x="40" y="110" width="5" height="5" rx="2" fill="#ffdd00" />
+  <rect x="155" y="110" width="5" height="5" rx="2" fill="#ffdd00" />
+  
+  <!-- Text "TTS" -->
+  <text x="100" y="65" font-family="Arial, sans-serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#2563eb">TTS</text>
+</svg>
