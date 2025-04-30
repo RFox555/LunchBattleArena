@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red square with stylized "K" -->
+  <rect x="10" y="10" width="100" height="100" fill="#e22323" />
+  <path d="M50 25 L50 95 M45 25 L80 60 L45 95" stroke="white" stroke-width="15" fill="none" />
+  
+  <!-- Arabic text representation -->
+  <text x="125" y="60" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="start" fill="#333333">مجموعة كوت الغذائية</text>
+  
+  <!-- English text -->
+  <text x="125" y="90" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="start" fill="#333333">Kout Food Group</text>
+</svg>
