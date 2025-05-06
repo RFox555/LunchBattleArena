@@ -147,9 +147,9 @@
           <h1>Transportation Tracking System</h1>
           <h2 style="margin-top: 5px; font-size: 16px; color: #4b5563;">Employee Dashboard</h2>
           <div class="nav-links">
-            <a href="/employee-dashboard" class="nav-link">Dashboard</a>
-            <a href="/rate-bus" class="nav-link">Rate Bus Experience</a>
-            <a href="/bus-tracking" class="nav-link">Track Buses</a>
+            <a href="/employee-dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/rate-bus.html" class="nav-link">Rate Bus Experience</a>
+            <a href="/bus-tracking.html" class="nav-link">Track Buses</a>
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@
         // Make sure the user is an employee (user type is still 'rider' in the database)
         if (currentUser.userType !== 'rider') {
           alert('This page is for employees only');
-          window.location.href = '/';
+          window.location.href = '/index.html';
           return;
         }
         
