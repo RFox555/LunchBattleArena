@@ -194,7 +194,7 @@
         })
         .then(user => {
           if (user.userType !== 'rider') {
-            window.location.href = '/';
+            window.location.href = '/index.html';
             throw new Error('Not authorized - only employees can rate buses');
           }
           

@@ -332,7 +332,7 @@
         const response = await fetch('/api/user');
         if (!response.ok) {
           // Not authenticated, redirect to login
-          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+          window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
           return;
         }
 
