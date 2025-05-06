@@ -160,7 +160,7 @@
       fetch('/api/auth/me')
         .then(response => {
           if (!response.ok) {
-            window.location.href = '/login';
+            window.location.href = '/login.html';
             throw new Error('Not authenticated');
           }
           return response.json();
@@ -187,7 +187,7 @@
         method: 'POST'
       })
       .then(() => {
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       })
       .catch(error => {
         console.error('Logout error:', error);

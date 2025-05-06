@@ -230,7 +230,7 @@
         
         if (!response.ok) {
           // Not logged in, redirect to login
-          window.location.href = '/login';
+          window.location.href = '/login.html';
           return;
         }
         
@@ -253,7 +253,7 @@
         fetchTripHistory();
       } catch (error) {
         console.error('Error checking authentication:', error);
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       }
     }
     
@@ -281,7 +281,7 @@
           method: 'POST',
           credentials: 'include'
         });
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       } catch (error) {
         console.error('Error logging out:', error);
       }

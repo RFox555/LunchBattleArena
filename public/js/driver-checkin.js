@@ -3,11 +3,18 @@
  * Handles the driver status panel and related operations
  */
 
-// Global variables
-let currentDriverId = null;
-let isCheckedIn = false;
-let lastCheckInTime = null;
-let lastCheckOutTime = null;
+// Global variables - exposing to window for access from inline scripts
+window.currentDriverId = null;
+window.isCheckedIn = false;
+window.lastCheckInTime = null;
+window.lastCheckOutTime = null;
+
+// Create a global driverStatus object that mirrors the variables for compatibility
+window.driverStatus = {
+  isCheckedIn: false,
+  lastCheckInTime: null,
+  lastCheckOutTime: null
+};
 
 // Initialize driver check-in functionality
 function initDriverCheckin() {
@@ -91,6 +98,8 @@ async function getCurrentUser() {
 
 // Check the driver's current status
 async function checkDriverStatus(driverId) {
+  // Make this function available to inline scripts
+  window.checkDriverStatus = checkDriverStatus;
   try {
     // Show loading indicator
     document.getElementById('status-loading').style.display = 'block';

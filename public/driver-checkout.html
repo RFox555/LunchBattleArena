@@ -340,7 +340,7 @@
         // Make sure the user is a driver
         if (currentUser.userType !== 'driver') {
           alert('You must be logged in as a driver to access this page.');
-          window.location.href = '/login';
+          window.location.href = '/login.html';
         } else {
           // Display driver info
           showDriverInfo();
@@ -350,7 +350,7 @@
         }
       } catch (error) {
         console.error('Error checking authentication:', error);
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       }
     }
 
@@ -610,7 +610,7 @@
           throw new Error('Logout failed');
         }
 
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       } catch (error) {
         console.error('Error logging out:', error);
         alert('Error logging out. Please try again.');
