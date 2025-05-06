@@ -44,7 +44,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Explicitly serve public static files first
-  app.use(express.static(path.join(process.cwd(), 'public')));
+  app.use(express.static(path.join(process.cwd(), 'public'), {
+    // Set the index file to be served when a directory is requested
+    index: ['index.html'],
+    // Ensure proper handling of HTML files whether the URL includes .html or not
+    extensions: ['html']
+  }));
 
   // Authentication middleware
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
