@@ -2,8 +2,9 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  insertUserSchema, insertTripSchema, loginSchema, checkInSchema, 
+  insertUserSchema, insertTripSchema, loginSchema, checkInSchema, checkOutSchema,
   insertBusLocationSchema, updateBusLocationSchema, insertBusRatingSchema, busRatingFormSchema,
+  masterListValidationSchema,
   type Trip, type BusLocation, type BusRating
 } from "@shared/schema";
 import express from "express";
@@ -219,6 +220,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Internal server error" });
     }
   });
+  
+  // Update master list of active employees
+  app.post("/api/master-list", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can update the master list
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can update the master list" });
+      }
+      
+      // Validate the request body
+      const result = masterListValidationSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid master list data", 
+          details: result.error.format() 
+        });
+      }
+      
+      const data = result.data;
+      console.log(`Updating master list with ${data.employeeIds.length} employee IDs`);
+      
+      // Update the master list
+      const updateResult = await storage.updateMasterList(data.employeeIds);
+      
+      return res.status(200).json({
+        message: "Master list updated successfully",
+        updated: updateResult.updated,
+        deactivated: updateResult.deactivated
+      });
+    } catch (error) {
+      console.error("Error updating master list:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   app.get("/api/users/by-rider-id/:riderId", authenticateUser, async (req, res) => {
     try {
@@ -262,6 +297,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employee = await storage.getUserByRiderId(data.riderId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Check if the employee is on the master list
+      if (!employee.onMasterList) {
+        return res.status(403).json({
+          message: "Employee not on current master list",
+          details: "This employee ID is not on the current active employee list. Please contact an administrator."
+        });
       }
       
       // Create the trip record
@@ -398,6 +441,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(trips);
     } catch (error) {
       console.error("Error fetching recent trips:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get active trips (checked in but not checked out)
+  app.get("/api/trips/active", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can see active trips
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const trips = await storage.getActiveTrips();
+      return res.status(200).json(trips);
+    } catch (error) {
+      console.error("Error fetching active trips:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Trip reporting endpoint with date range filter
+  app.get("/api/trips/report", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can access reports
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get date parameters
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+      
+      // Parse dates
+      const parsedStartDate = new Date(startDate as string);
+      const parsedEndDate = new Date(endDate as string);
+      
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      // Set the end date to end of day
+      parsedEndDate.setHours(23, 59, 59, 999);
+      
+      const trips = await storage.getTripReport(parsedStartDate, parsedEndDate);
+      return res.status(200).json(trips);
+    } catch (error) {
+      console.error("Error generating trip report:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Check-out API (for drivers to check out employees)
+  app.post("/api/check-out", authenticateUser, async (req, res) => {
+    try {
+      // Validate that the user is a driver
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can check out employees" });
+      }
+      
+      // Validate the request body
+      const result = checkOutSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid check-out data", 
+          details: result.error.format() 
+        });
+      }
+      
+      const data = result.data;
+      
+      // Verify that the trip exists
+      const existingTrip = await storage.getTrip(data.tripId);
+      if (!existingTrip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      
+      // Verify that the trip belongs to the current driver
+      if (existingTrip.driverId !== req.session.userId) {
+        return res.status(403).json({ message: "You can only check out trips that you started" });
+      }
+      
+      // Check out the trip
+      const updatedTrip = await storage.checkOutTrip(data.tripId, data.note);
+      if (!updatedTrip) {
+        return res.status(404).json({ message: "Failed to check out trip" });
+      }
+      
+      console.log("Check-out successful", { tripId: updatedTrip.id });
+      return res.status(200).json(updatedTrip);
+    } catch (error) {
+      console.error("Error in check-out API:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
