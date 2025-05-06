@@ -386,3 +386,20 @@ window.checkDriverStatus = checkDriverStatus;
 window.checkInDriver = checkInDriver;
 window.checkOutDriver = checkOutDriver;
 window.isDriverCheckedIn = () => isCheckedIn; // Utility function to check status from other scripts
+
+// This variable is here to maintain backward compatibility with existing code
+window.driverStatus = { isCheckedIn: false, lastCheckInTime: null, lastCheckOutTime: null };
+
+// Override the updateDriverStatusUI function to also update the window.driverStatus object
+const originalUpdateDriverStatusUI = updateDriverStatusUI;
+updateDriverStatusUI = function() {
+  // Call the original function
+  originalUpdateDriverStatusUI();
+  
+  // Then update the global object for backward compatibility
+  window.driverStatus = {
+    isCheckedIn: isCheckedIn,
+    lastCheckInTime: lastCheckInTime,
+    lastCheckOutTime: lastCheckOutTime
+  };
+};
