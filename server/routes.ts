@@ -18,6 +18,7 @@ declare module 'express-session' {
   interface SessionData {
     userId?: number;
     userType?: 'driver' | 'rider'; // 'rider' represents employees in the database
+    createdAt?: string; // Added for session timestamp tracking
   }
 }
 
@@ -728,6 +729,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Bus Location API Endpoints
+  // Driver check-in/check-out management routes
+  app.post("/api/drivers/:driverId/check-in", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can check in
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can use this endpoint" });
+      }
+      
+      // Parse driver ID from route parameter
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      // Ensure the driver is checking themselves in (not another driver)
+      if (driverId !== req.session.userId) {
+        return res.status(403).json({ message: "You can only check yourself in" });
+      }
+      
+      // Validate check-in data
+      const data = driverCheckInSchema.parse(req.body);
+      
+      // Perform the check-in
+      const updatedDriver = await storage.checkInDriver(driverId, data.location, data.note);
+      
+      if (!updatedDriver) {
+        return res.status(404).json({ message: "Driver not found" });
+      }
+      
+      // Return success response
+      return res.status(200).json({ 
+        message: "Driver checked in successfully",
+        driverId: updatedDriver.id,
+        name: updatedDriver.name,
+        checkInTime: updatedDriver.lastCheckInTime
+      });
+    } catch (error) {
+      console.error("Driver check-in error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid check-in data", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.post("/api/drivers/:driverId/check-out", authenticateUser, async (req, res) => {
+    try {
+      // Only drivers can check out
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can use this endpoint" });
+      }
+      
+      // Parse driver ID from route parameter
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      // Ensure the driver is checking themselves out (not another driver)
+      if (driverId !== req.session.userId) {
+        return res.status(403).json({ message: "You can only check yourself out" });
+      }
+      
+      // Validate check-out data if there's any in the request body
+      let note = undefined;
+      if (Object.keys(req.body).length > 0) {
+        const data = driverCheckOutSchema.parse(req.body);
+        note = data.note;
+      }
+      
+      // Perform the check-out
+      const updatedDriver = await storage.checkOutDriver(driverId, note);
+      
+      if (!updatedDriver) {
+        return res.status(404).json({ message: "Driver not found" });
+      }
+      
+      // Return success response
+      return res.status(200).json({ 
+        message: "Driver checked out successfully",
+        driverId: updatedDriver.id,
+        name: updatedDriver.name,
+        checkOutTime: updatedDriver.lastCheckOutTime
+      });
+    } catch (error) {
+      console.error("Driver check-out error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid check-out data", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.get("/api/drivers/:driverId/status", authenticateUser, async (req, res) => {
+    try {
+      // Anyone can check a driver's status, but we'll keep authentication for security
+      const driverId = parseInt(req.params.driverId);
+      if (isNaN(driverId)) {
+        return res.status(400).json({ message: "Invalid driver ID" });
+      }
+      
+      // Get the driver's status
+      const status = await storage.getDriverStatus(driverId);
+      
+      if (!status) {
+        return res.status(404).json({ message: "Driver not found" });
+      }
+      
+      // Return the status
+      return res.status(200).json(status);
+    } catch (error) {
+      console.error("Driver status check error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Create a new bus location (for drivers)
   app.post("/api/bus-locations", authenticateUser, async (req, res) => {
     try {
