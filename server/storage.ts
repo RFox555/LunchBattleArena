@@ -93,6 +93,8 @@ export class DatabaseStorage implements IStorage {
         await this.seedTestData();
       } else {
         console.log("Database schema already exists");
+        // Check for and apply schema updates
+        await this.updateSchema();
       }
     } catch (error) {
       console.error("Error setting up database:", error);
@@ -416,7 +418,88 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Create a new trip
+  // Check and update database schema if needed
+  private async updateSchema(): Promise<void> {
+    try {
+      console.log("Checking for schema updates...");
+      
+      // Check for 'on_master_list' column in users table
+      const hasOnMasterList = await this.hasColumn("users", "on_master_list");
+      if (!hasOnMasterList) {
+        console.log("Adding on_master_list column to users table");
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN on_master_list BOOLEAN NOT NULL DEFAULT TRUE;
+        `);
+      }
+      
+      // Check for 'last_validated' column in users table
+      const hasLastValidated = await this.hasColumn("users", "last_validated");
+      if (!hasLastValidated) {
+        console.log("Adding last_validated column to users table");
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN last_validated TIMESTAMP WITH TIME ZONE;
+        `);
+      }
+      
+      // Check if trips table needs migration from timestamp to check_in_time/check_out_time
+      const hasCheckInTime = await this.hasColumn("trips", "check_in_time");
+      const hasCheckOutTime = await this.hasColumn("trips", "check_out_time");
+      const hasTimestamp = await this.hasColumn("trips", "timestamp");
+      
+      if (!hasCheckInTime) {
+        console.log("Adding check_in_time column to trips table");
+        await pool.query(`
+          ALTER TABLE trips 
+          ADD COLUMN check_in_time TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+        `);
+      }
+      
+      if (!hasCheckOutTime) {
+        console.log("Adding check_out_time column to trips table");
+        await pool.query(`
+          ALTER TABLE trips 
+          ADD COLUMN check_out_time TIMESTAMP WITH TIME ZONE;
+        `);
+      }
+      
+      if (hasTimestamp && hasCheckInTime) {
+        // Migrate data from timestamp to check_in_time
+        console.log("Migrating data from timestamp to check_in_time");
+        await pool.query(`
+          UPDATE trips 
+          SET check_in_time = timestamp 
+          WHERE check_in_time IS NULL AND timestamp IS NOT NULL;
+        `);
+      }
+      
+      console.log("Schema updates completed");
+    } catch (error) {
+      console.error("Error updating schema:", error);
+      throw error;
+    }
+  }
+  
+  // Check if a column exists in a table
+  private async hasColumn(tableName: string, columnName: string): Promise<boolean> {
+    try {
+      const result = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = $1
+          AND column_name = $2
+        );
+      `, [tableName, columnName]);
+      
+      return result.rows[0].exists;
+    } catch (error) {
+      console.error(`Error checking if column ${columnName} exists in table ${tableName}:`, error);
+      return false;
+    }
+  }
+  
   async createTrip(insertTrip: InsertTrip): Promise<Trip> {
     try {
       console.log("Creating trip with data:", insertTrip);
