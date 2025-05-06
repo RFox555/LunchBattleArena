@@ -12,6 +12,7 @@ import session from "express-session";
 import { ZodError } from "zod";
 import { WebSocketServer, WebSocket } from "ws";
 import path from "path";
+import fs from "fs";
 
 // Extend the Express session with our custom properties
 declare module 'express-session' {
@@ -1061,6 +1062,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add route handlers for HTML pages
+  app.get('/:page.html', (req, res, next) => {
+    // This route will handle explicit .html requests
+    // Let express.static handle it directly
+    next();
+  });
+
+  // Special handling for root path
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+  });
+
+  // Add a fallback handler for pages without .html extension
+  app.get('/:page', (req, res, next) => {
+    // Skip API routes and other special paths
+    if (req.params.page.startsWith('api') || 
+        req.params.page === 'ws' || 
+        req.params.page.includes('.')) {
+      return next();
+    }
+    
+    const pagePath = path.join(process.cwd(), 'public', req.params.page + '.html');
+    
+    // Check if the HTML file exists
+    if (fs.existsSync(pagePath)) {
+      console.log('Redirecting from', req.params.page, 'to', req.params.page + '.html');
+      return res.redirect('/' + req.params.page + '.html');
+    }
+    
+    // Continue to next handler if file doesn't exist
+    next();
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   
@@ -1077,6 +1111,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('close', () => {
       console.log('WebSocket client disconnected');
     });
+  });
+
+  // 404 handler - must be after all other routes
+  app.use((req, res) => {
+    // Skip handling APIs with a JSON 404 response
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API endpoint not found' });
+    }
+    
+    // For all other pages, show our not-found page
+    const notFoundPath = path.join(process.cwd(), 'public', '404.html');
+    
+    if (fs.existsSync(notFoundPath)) {
+      return res.status(404).sendFile(notFoundPath);
+    } else {
+      // If we don't have a 404 page, just send a simple error message
+      return res.status(404).send('Page not found');
+    }
   });
 
   return httpServer;
