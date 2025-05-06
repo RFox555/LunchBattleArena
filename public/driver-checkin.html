@@ -247,10 +247,46 @@
     <div class="card">
       <div id="welcome-message" class="welcome">Loading...</div>
       
-      <div class="tabs">
-        <div class="tab active" data-tab="scan">Scan QR Code</div>
-        <div class="tab" data-tab="manual">Manual Entry</div>
+      <!-- Driver Check-in/Check-out Panel -->
+      <div class="driver-status-panel" style="margin-bottom: 20px; padding: 15px; background-color: #f3f4f6; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Driver Status</h3>
+        <div id="driver-status-indicator" style="margin: 10px 0; padding: 10px; text-align: center; font-weight: bold; border-radius: 4px;">
+          Checking status...
+        </div>
+        
+        <div id="driver-checked-in-controls" style="display: none;">
+          <p>You are currently checked in and ready to scan employee QR codes.</p>
+          <div style="display: flex; justify-content: center;">
+            <button id="driver-check-out-btn" class="button" style="background-color: #e11d48;">End Shift (Check Out)</button>
+          </div>
+          <p style="font-size: 12px; color: #666; text-align: center; margin-top: 5px;">
+            Checked in at: <span id="check-in-time">-</span>
+          </p>
+        </div>
+        
+        <div id="driver-checked-out-controls" style="display: none;">
+          <p>You must check in before you can scan employee QR codes.</p>
+          <div style="margin-top: 10px;">
+            <div class="form-group">
+              <label for="check-in-location">Current Location:</label>
+              <input type="text" id="check-in-location" value="Bus Terminal" required>
+            </div>
+            <div class="form-group">
+              <label for="check-in-note">Note (Optional):</label>
+              <textarea id="check-in-note" placeholder="Add any notes about your shift"></textarea>
+            </div>
+            <div style="display: flex; justify-content: center;">
+              <button id="driver-check-in-btn" class="button">Start Shift (Check In)</button>
+            </div>
+          </div>
+        </div>
       </div>
+      
+      <div id="scanning-panel">
+        <div class="tabs">
+          <div class="tab active" data-tab="scan">Scan QR Code</div>
+          <div class="tab" data-tab="manual">Manual Entry</div>
+        </div>
       
       <div id="scan-tab" class="tab-content active">
         <p>Scan the employee's QR code to check them in:</p>
@@ -315,6 +351,7 @@
           <span class="detail-label">Note:</span>
           <span id="trip-note"></span>
         </div>
+      </div>
       </div>
     </div>
     
@@ -387,8 +424,20 @@
     const qrManualInput = document.getElementById('qr-manual-input');
     const qrManualSubmit = document.getElementById('qr-manual-submit');
     
+    // Driver check-in/check-out elements
+    const driverStatusIndicator = document.getElementById('driver-status-indicator');
+    const driverCheckedInControls = document.getElementById('driver-checked-in-controls');
+    const driverCheckedOutControls = document.getElementById('driver-checked-out-controls');
+    const driverCheckInBtn = document.getElementById('driver-check-in-btn');
+    const driverCheckOutBtn = document.getElementById('driver-check-out-btn');
+    const checkInLocation = document.getElementById('check-in-location');
+    const checkInNote = document.getElementById('check-in-note');
+    const checkInTimeDisplay = document.getElementById('check-in-time');
+    const scanningPanel = document.getElementById('scanning-panel');
+    
     // Current user data
     let currentUser = null;
+    let driverStatus = { isCheckedIn: false, lastCheckInTime: null };
     
     // QR Code scanner
     let html5QrCode;
@@ -410,6 +459,13 @@
     
     // Start scanner
     function startScanner() {
+      // First, make sure the driver is checked in
+      if (!driverStatus.isCheckedIn) {
+        errorMessage.textContent = 'You must check in before you can scan employee QR codes.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+      
       const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
       
       html5QrCode.start(
@@ -469,6 +525,13 @@
       // Hide previous messages
       successMessage.style.display = 'none';
       errorMessage.style.display = 'none';
+      
+      // First, make sure the driver is checked in
+      if (!driverStatus.isCheckedIn) {
+        errorMessage.textContent = 'You must check in before you can check in employees.';
+        errorMessage.style.display = 'block';
+        return;
+      }
       
       // Validate employee ID
       if (!riderId || riderId.length !== 5 || !/^\d+$/.test(riderId)) {
@@ -591,6 +654,136 @@
       }
     }
     
+    // Check driver status
+    async function checkDriverStatus() {
+      try {
+        const response = await fetch(`/api/drivers/${currentUser.id}/status`, { credentials: 'include' });
+        
+        if (response.ok) {
+          driverStatus = await response.json();
+          console.log('Driver status:', driverStatus);
+          
+          // Update UI based on driver status
+          updateDriverStatusUI();
+        } else {
+          console.error('Failed to fetch driver status');
+          driverStatus = { isCheckedIn: false };
+          updateDriverStatusUI();
+        }
+      } catch (error) {
+        console.error('Error checking driver status:', error);
+        driverStatus = { isCheckedIn: false };
+        updateDriverStatusUI();
+      }
+    }
+    
+    // Update driver status UI
+    function updateDriverStatusUI() {
+      // Update status indicator
+      if (driverStatus.isCheckedIn) {
+        driverStatusIndicator.textContent = 'Checked In';
+        driverStatusIndicator.className = 'status-indicator active';
+        driverStatusIndicator.style.backgroundColor = '#dcfce7';
+        driverStatusIndicator.style.color = '#166534';
+        
+        // Show checked-in controls, hide checked-out controls
+        driverCheckedInControls.style.display = 'block';
+        driverCheckedOutControls.style.display = 'none';
+        
+        // Show scanning panel
+        scanningPanel.style.display = 'block';
+        
+        // Update check-in time display
+        if (driverStatus.lastCheckInTime) {
+          checkInTimeDisplay.textContent = formatDateTime(driverStatus.lastCheckInTime);
+        }
+      } else {
+        driverStatusIndicator.textContent = 'Checked Out';
+        driverStatusIndicator.className = 'status-indicator inactive';
+        driverStatusIndicator.style.backgroundColor = '#fee2e2';
+        driverStatusIndicator.style.color = '#b91c1c';
+        
+        // Show checked-out controls, hide checked-in controls
+        driverCheckedOutControls.style.display = 'block';
+        driverCheckedInControls.style.display = 'none';
+        
+        // Hide scanning panel
+        scanningPanel.style.display = 'none';
+      }
+    }
+    
+    // Driver check-in
+    async function driverCheckIn() {
+      try {
+        const location = checkInLocation.value.trim();
+        const note = checkInNote.value.trim();
+        
+        if (!location) {
+          errorMessage.textContent = 'Please enter your current location';
+          errorMessage.style.display = 'block';
+          return;
+        }
+        
+        const response = await fetch(`/api/drivers/${currentUser.id}/check-in`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location, note: note || undefined }),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          await checkDriverStatus(); // Refresh driver status
+          
+          successMessage.textContent = 'You have been successfully checked in!';
+          successMessage.style.display = 'block';
+          errorMessage.style.display = 'none';
+        } else {
+          const errorData = await response.json();
+          errorMessage.textContent = errorData.message || 'Failed to check in. Please try again.';
+          errorMessage.style.display = 'block';
+          successMessage.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error during driver check-in:', error);
+        errorMessage.textContent = 'An error occurred during check-in. Please try again.';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      }
+    }
+    
+    // Driver check-out
+    async function driverCheckOut() {
+      try {
+        const response = await fetch(`/api/drivers/${currentUser.id}/check-out`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          await checkDriverStatus(); // Refresh driver status
+          
+          successMessage.textContent = 'You have been successfully checked out!';
+          successMessage.style.display = 'block';
+          errorMessage.style.display = 'none';
+          
+          // Stop scanner if running
+          if (isScanning) {
+            stopScanner();
+          }
+        } else {
+          const errorData = await response.json();
+          errorMessage.textContent = errorData.message || 'Failed to check out. Please try again.';
+          errorMessage.style.display = 'block';
+          successMessage.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error during driver check-out:', error);
+        errorMessage.textContent = 'An error occurred during check-out. Please try again.';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      }
+    }
+    
     // Check if user is logged in
     async function checkAuth() {
       try {
@@ -617,8 +810,15 @@
         // Initialize QR scanner
         initQrScanner();
         
+        // Check driver status
+        await checkDriverStatus();
+        
         // Fetch recent check-ins
         fetchRecentCheckIns();
+        
+        // Setup driver check-in/check-out event handlers
+        driverCheckInBtn.addEventListener('click', driverCheckIn);
+        driverCheckOutBtn.addEventListener('click', driverCheckOut);
       } catch (error) {
         console.error('Error checking authentication:', error);
         window.location.href = '/login';
