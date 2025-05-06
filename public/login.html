@@ -124,7 +124,7 @@
     <div id="success-message" class="success-message"></div>
     
     <div class="register-link">
-      Don't have an account? <a href="/register">Register</a>
+      Don't have an account? <a href="/register.html">Register</a>
     </div>
   </div>
   
@@ -175,9 +175,9 @@
           
           // Redirect based on user type
           if (user.userType === 'rider') {
-            window.location.href = '/employee-dashboard';
+            window.location.href = '/employee-dashboard.html';
           } else if (user.userType === 'driver') {
-            window.location.href = '/driver-checkin';
+            window.location.href = '/driver-checkin.html';
           } else {
             window.location.href = '/';
           }
