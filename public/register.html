@@ -201,7 +201,7 @@
           // Registration successful, redirect to login
           const data = await response.json();
           console.log('Registration successful:', data);
-          window.location.href = '/login?registered=true';
+          window.location.href = '/login.html?registered=true';
         } else {
           // Registration failed
           const error = await response.json();
