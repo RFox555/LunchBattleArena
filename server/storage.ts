@@ -426,7 +426,7 @@ export class DatabaseStorage implements IStorage {
         .insert(trips)
         .values({
           ...insertTrip,
-          timestamp: new Date(),
+          checkInTime: new Date(),
           location: insertTrip.location || null,
           note: insertTrip.note || null
         })
@@ -458,7 +458,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(trips)
         .where(eq(trips.riderId, riderId))
-        .orderBy(desc(trips.timestamp));
+        .orderBy(desc(trips.checkInTime));
     } catch (error) {
       console.error("Error getting trips by rider ID:", error);
       return [];
@@ -472,7 +472,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(trips)
         .where(eq(trips.driverId, driverId))
-        .orderBy(desc(trips.timestamp));
+        .orderBy(desc(trips.checkInTime));
     } catch (error) {
       console.error("Error getting trips by driver ID:", error);
       return [];
@@ -498,12 +498,23 @@ export class DatabaseStorage implements IStorage {
   // Check out an employee (record when they leave the bus)
   async checkOutTrip(id: number, note?: string): Promise<Trip | undefined> {
     try {
+      // First get the current trip to access its note
+      const existingTrip = await this.getTrip(id);
+      if (!existingTrip) {
+        throw new Error(`Trip with ID ${id} not found`);
+      }
+      
+      // Now update with the combined note
+      const updatedNote = note 
+        ? (existingTrip.note ? `${existingTrip.note}; ${note}` : note) 
+        : existingTrip.note;
+        
       const [trip] = await db
         .update(trips)
         .set({ 
           checkOutTime: new Date(),
           completed: true,
-          note: note ? (trip?.note ? `${trip.note}; ${note}` : note) : undefined
+          note: updatedNote
         })
         .where(eq(trips.id, id))
         .returning();
