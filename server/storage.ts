@@ -1,4 +1,4 @@
-import { eq, desc, sql, and, avg } from "drizzle-orm";
+import { eq, desc, sql, and, avg, inArray, notInArray } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, trips, busLocations, busRatings,
@@ -23,6 +23,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   generateRiderId(): Promise<string>;
   listUsers(userType?: string): Promise<User[]>;
+  updateUserMasterListStatus(riderId: string, isActive: boolean): Promise<User | undefined>;
+  updateMasterList(employeeIds: string[]): Promise<{ updated: number, deactivated: number }>;
   
   // Trip operations
   createTrip(trip: InsertTrip): Promise<Trip>;
@@ -30,7 +32,10 @@ export interface IStorage {
   getTripsByRiderId(riderId: string): Promise<Trip[]>;
   getTripsByDriverId(driverId: number): Promise<Trip[]>;
   completeTrip(id: number): Promise<Trip | undefined>;
+  checkOutTrip(id: number, note?: string): Promise<Trip | undefined>;
   listRecentTrips(limit?: number): Promise<Trip[]>;
+  getActiveTrips(): Promise<Trip[]>;
+  getTripReport(startDate: Date, endDate: Date): Promise<Trip[]>;
   
   // Bus location operations
   createBusLocation(location: InsertBusLocation): Promise<BusLocation>;
@@ -126,7 +131,9 @@ export class DatabaseStorage implements IStorage {
           rider_id TEXT,
           name TEXT NOT NULL,
           is_active BOOLEAN NOT NULL DEFAULT TRUE,
-          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          on_master_list BOOLEAN NOT NULL DEFAULT TRUE,
+          last_validated TIMESTAMP WITH TIME ZONE
         );
       `);
       
@@ -136,7 +143,8 @@ export class DatabaseStorage implements IStorage {
           id SERIAL PRIMARY KEY,
           rider_id TEXT NOT NULL,
           driver_id INTEGER NOT NULL,
-          timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          check_in_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          check_out_time TIMESTAMP WITH TIME ZONE,
           location TEXT,
           completed BOOLEAN NOT NULL DEFAULT FALSE,
           note TEXT
@@ -219,7 +227,8 @@ export class DatabaseStorage implements IStorage {
         {
           driverId: driver.id,
           riderId: rider.riderId!,
-          timestamp: yesterday,
+          checkInTime: yesterday,
+          checkOutTime: new Date(yesterday.getTime() + 3600000),  // 1 hour later
           location: "Main Street Bus Stop",
           note: "Morning commute",
           completed: true
@@ -227,7 +236,8 @@ export class DatabaseStorage implements IStorage {
         {
           driverId: driver.id,
           riderId: rider.riderId!,
-          timestamp: twoDaysAgo,
+          checkInTime: twoDaysAgo,
+          checkOutTime: new Date(twoDaysAgo.getTime() + 7200000),  // 2 hours later
           location: "Downtown Transit Center",
           note: "Afternoon return",
           completed: true
@@ -346,6 +356,65 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+  
+  // Update a single user's master list status
+  async updateUserMasterListStatus(riderId: string, isActive: boolean): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ 
+          onMasterList: isActive,
+          lastValidated: new Date()
+        })
+        .where(eq(users.riderId, riderId))
+        .returning();
+      
+      return user;
+    } catch (error) {
+      console.error("Error updating user master list status:", error);
+      return undefined;
+    }
+  }
+  
+  // Update the master list with a batch of employee IDs
+  async updateMasterList(employeeIds: string[]): Promise<{ updated: number, deactivated: number }> {
+    try {
+      // First, update users who are on the master list
+      const updateResult = await db
+        .update(users)
+        .set({ 
+          onMasterList: true,
+          lastValidated: new Date()
+        })
+        .where(and(
+          eq(users.userType, "rider"),
+          inArray(users.riderId, employeeIds)
+        ))
+        .returning();
+      
+      // Next, mark as inactive any riders not in the list
+      const deactivateResult = await db
+        .update(users)
+        .set({ 
+          onMasterList: false,
+          lastValidated: new Date()
+        })
+        .where(and(
+          eq(users.userType, "rider"),
+          notInArray(users.riderId, employeeIds),
+          eq(users.onMasterList, true) // Only update those that were previously active
+        ))
+        .returning();
+      
+      return {
+        updated: updateResult.length,
+        deactivated: deactivateResult.length
+      };
+    } catch (error) {
+      console.error("Error updating master list:", error);
+      return { updated: 0, deactivated: 0 };
+    }
+  }
 
   // Create a new trip
   async createTrip(insertTrip: InsertTrip): Promise<Trip> {
@@ -425,6 +494,60 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
   }
+  
+  // Check out an employee (record when they leave the bus)
+  async checkOutTrip(id: number, note?: string): Promise<Trip | undefined> {
+    try {
+      const [trip] = await db
+        .update(trips)
+        .set({ 
+          checkOutTime: new Date(),
+          completed: true,
+          note: note ? (trip?.note ? `${trip.note}; ${note}` : note) : undefined
+        })
+        .where(eq(trips.id, id))
+        .returning();
+      
+      return trip;
+    } catch (error) {
+      console.error("Error checking out trip:", error);
+      return undefined;
+    }
+  }
+
+  // Get active trips (checked in but not checked out)
+  async getActiveTrips(): Promise<Trip[]> {
+    try {
+      return await db
+        .select()
+        .from(trips)
+        .where(and(
+          eq(trips.completed, false),
+          sql`check_out_time IS NULL`
+        ))
+        .orderBy(desc(trips.checkInTime));
+    } catch (error) {
+      console.error("Error getting active trips:", error);
+      return [];
+    }
+  }
+  
+  // Get trip report for a date range
+  async getTripReport(startDate: Date, endDate: Date): Promise<Trip[]> {
+    try {
+      return await db
+        .select()
+        .from(trips)
+        .where(and(
+          sql`check_in_time >= ${startDate}`,
+          sql`check_in_time <= ${endDate}`
+        ))
+        .orderBy(desc(trips.checkInTime));
+    } catch (error) {
+      console.error("Error generating trip report:", error);
+      return [];
+    }
+  }
 
   // List recent trips with optional limit
   async listRecentTrips(limit: number = 10): Promise<Trip[]> {
@@ -432,7 +555,7 @@ export class DatabaseStorage implements IStorage {
       return await db
         .select()
         .from(trips)
-        .orderBy(desc(trips.timestamp))
+        .orderBy(desc(trips.checkInTime))
         .limit(limit);
     } catch (error) {
       console.error("Error listing recent trips:", error);
