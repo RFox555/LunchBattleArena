@@ -606,6 +606,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('driver-checkin.html', { root: './public' });
   });
   
+  // Driver check-out page
+  app.get('/driver-checkout', (req, res) => {
+    res.sendFile('driver-checkout.html', { root: './public' });
+  });
+  
   // Bus tracking page
   app.get('/bus-tracking', (req, res) => {
     res.sendFile('bus-tracking.html', { root: './public' });

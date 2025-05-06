@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Check-Out | Transportation Tracking System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+    .logo-container {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .logo-container img {
+      max-height: 80px;
+      filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.2));
+      border: 3px solid #c00;
+      border-radius: 10px;
+      padding: 5px;
+      background-color: white;
+    }
+    .page-header {
+      background-color: #e3f2fd;
+      border-bottom: 1px solid #dee2e6;
+      padding: 1rem 0;
+      margin-bottom: 2rem;
+    }
+    .navbar-brand {
+      font-weight: 600;
+      color: #1a73e8;
+    }
+    .card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+    }
+    .card-header {
+      background-color: #f1f8ff;
+      border-radius: 10px 10px 0 0 !important;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background-color: #1a73e8;
+      border-color: #1a73e8;
+    }
+    .btn-primary:hover {
+      background-color: #0d65e0;
+      border-color: #0d65e0;
+    }
+    .btn-success {
+      background-color: #34a853;
+      border-color: #34a853;
+    }
+    .btn-success:hover {
+      background-color: #2d9248;
+      border-color: #2d9248;
+    }
+    .btn-danger {
+      background-color: #ea4335;
+      border-color: #ea4335;
+    }
+    .btn-danger:hover {
+      background-color: #d33426;
+      border-color: #d33426;
+    }
+    .trip-item {
+      border-left: 4px solid #1a73e8;
+      padding-left: 10px;
+      margin-bottom: 10px;
+      background-color: #fff;
+    }
+    .trip-item h5 {
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+    .trip-item p {
+      margin-bottom: 0.25rem;
+      color: #555;
+    }
+    .trip-details {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .badge-active {
+      background-color: #34a853;
+      color: white;
+    }
+    .action-buttons .btn {
+      margin-right: 5px;
+    }
+    .centered-spinner {
+      margin: 2rem auto;
+      display: flex;
+      justify-content: center;
+    }
+    .status-badge-active {
+      background-color: #34a853 !important;
+      color: white;
+    }
+    .status-badge-completed {
+      background-color: #9e9e9e !important;
+      color: white;
+    }
+    #checkOutNoteModal .modal-header {
+      background-color: #f1f8ff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+      <div class="logo-container">
+        <img src="images/logo.png" alt="Kout Food Group" class="navbar-logo">
+      </div>
+      <a class="navbar-brand ms-3" href="#">Transportation Tracking System</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/driver-checkin">Check-In</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/driver-checkout">Check-Out</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/driver-ratings">Ratings</a>
+          </li>
+          <li class="nav-item">
+            <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-2">Logout</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <h2 class="mb-0">Driver Check-Out Dashboard</h2>
+      <p class="text-muted mb-0">Check out employees at the end of their trip</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container mb-5">
+    <div class="row">
+      <!-- Active Trips Card -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Active Trips</span>
+            <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
+          </div>
+          <div class="card-body">
+            <div id="activeTripsLoading" class="centered-spinner">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div id="noActiveTrips" class="alert alert-info" style="display: none;">
+              No active trips found. All employees have been checked out.
+            </div>
+            <div id="activeTripsContainer">
+              <!-- Active trips will be dynamically added here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Driver Info Card -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            Driver Information
+          </div>
+          <div class="card-body">
+            <div id="driverInfoLoading" class="centered-spinner">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div id="driverInfoContainer" style="display: none;">
+              <h5 id="driverName">Loading...</h5>
+              <p id="driverUsername" class="text-muted">Loading...</p>
+              <hr>
+              <div class="mb-3">
+                <h6>Today's Statistics</h6>
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div id="totalTripsToday" class="h3 mb-0 text-primary">0</div>
+                    <small class="text-muted">Total Trips</small>
+                  </div>
+                  <div>
+                    <div id="activeTripsCount" class="h3 mb-0 text-success">0</div>
+                    <small class="text-muted">Active Trips</small>
+                  </div>
+                  <div>
+                    <div id="completedTripsToday" class="h3 mb-0 text-secondary">0</div>
+                    <small class="text-muted">Completed</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master List Update Card -->
+        <div class="card mt-3">
+          <div class="card-header">
+            Master List Management
+          </div>
+          <div class="card-body">
+            <p class="card-text">Upload the latest employee master list to update active employee status.</p>
+            <div class="mb-3">
+              <label for="masterListFile" class="form-label">Employee IDs (CSV or TXT)</label>
+              <input class="form-control" type="file" id="masterListFile" accept=".csv,.txt">
+              <div class="form-text">File should contain one employee ID per line.</div>
+            </div>
+            <button id="uploadMasterListBtn" class="btn btn-primary">Update Master List</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Check-Outs Card -->
+    <div class="card mt-4">
+      <div class="card-header">
+        Recent Check-Outs
+      </div>
+      <div class="card-body">
+        <div id="recentCheckOutsLoading" class="centered-spinner">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <div id="noRecentCheckOuts" class="alert alert-info" style="display: none;">
+          No recent check-outs found.
+        </div>
+        <div class="table-responsive">
+          <table id="recentCheckOutsTable" class="table table-hover" style="display: none;">
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Check-In Time</th>
+                <th>Check-Out Time</th>
+                <th>Location</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="recentCheckOutsBody">
+              <!-- Recent check-outs will be dynamically added here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check-Out Note Modal -->
+  <div class="modal fade" id="checkOutNoteModal" tabindex="-1" aria-labelledby="checkOutNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="checkOutNoteModalLabel">Add Check-Out Note</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="checkOutForm">
+            <input type="hidden" id="checkOutTripId" name="tripId">
+            <div class="mb-3">
+              <p>Employee ID: <span id="checkOutEmployeeId" class="fw-bold"></span></p>
+              <p>Check-In Time: <span id="checkOutCheckInTime" class="fw-bold"></span></p>
+              <p>Location: <span id="checkOutLocation" class="fw-bold"></span></p>
+            </div>
+            <div class="mb-3">
+              <label for="checkOutNote" class="form-label">Note (optional):</label>
+              <textarea class="form-control" id="checkOutNote" name="note" rows="3" placeholder="Add any notes about this check-out"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="confirmCheckOutBtn" class="btn btn-primary">Check Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // DOM Elements
+    const activeTripsContainer = document.getElementById('activeTripsContainer');
+    const activeTripsLoading = document.getElementById('activeTripsLoading');
+    const noActiveTrips = document.getElementById('noActiveTrips');
+    const recentCheckOutsBody = document.getElementById('recentCheckOutsBody');
+    const recentCheckOutsLoading = document.getElementById('recentCheckOutsLoading');
+    const recentCheckOutsTable = document.getElementById('recentCheckOutsTable');
+    const noRecentCheckOuts = document.getElementById('noRecentCheckOuts');
+    const driverInfoContainer = document.getElementById('driverInfoContainer');
+    const driverInfoLoading = document.getElementById('driverInfoLoading');
+    const driverName = document.getElementById('driverName');
+    const driverUsername = document.getElementById('driverUsername');
+    const totalTripsToday = document.getElementById('totalTripsToday');
+    const activeTripsCount = document.getElementById('activeTripsCount');
+    const completedTripsToday = document.getElementById('completedTripsToday');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const uploadMasterListBtn = document.getElementById('uploadMasterListBtn');
+    const masterListFile = document.getElementById('masterListFile');
+    const checkOutModal = new bootstrap.Modal(document.getElementById('checkOutNoteModal'));
+    const checkOutForm = document.getElementById('checkOutForm');
+    const checkOutTripId = document.getElementById('checkOutTripId');
+    const checkOutEmployeeId = document.getElementById('checkOutEmployeeId');
+    const checkOutCheckInTime = document.getElementById('checkOutCheckInTime');
+    const checkOutLocation = document.getElementById('checkOutLocation');
+    const checkOutNote = document.getElementById('checkOutNote');
+    const confirmCheckOutBtn = document.getElementById('confirmCheckOutBtn');
+
+    // Current user data
+    let currentUser = null;
+
+    // Check if the user is logged in
+    async function checkAuthentication() {
+      try {
+        const response = await fetch('/api/user');
+        if (!response.ok) {
+          // Not authenticated, redirect to login
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+          return;
+        }
+
+        currentUser = await response.json();
+        // Make sure the user is a driver
+        if (currentUser.userType !== 'driver') {
+          alert('You must be logged in as a driver to access this page.');
+          window.location.href = '/login';
+        } else {
+          // Display driver info
+          showDriverInfo();
+          // Load data
+          loadActiveTrips();
+          loadRecentCheckOuts();
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        window.location.href = '/login';
+      }
+    }
+
+    // Display driver information
+    function showDriverInfo() {
+      driverName.textContent = currentUser.name;
+      driverUsername.textContent = `@${currentUser.username}`;
+      driverInfoLoading.style.display = 'none';
+      driverInfoContainer.style.display = 'block';
+    }
+
+    // Format date to a readable format
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+
+    // Format a short time (just hours and minutes)
+    function formatShortTime(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Load active trips from the API
+    async function loadActiveTrips() {
+      try {
+        activeTripsLoading.style.display = 'flex';
+        activeTripsContainer.innerHTML = '';
+        noActiveTrips.style.display = 'none';
+
+        const response = await fetch('/api/trips/active');
+        if (!response.ok) throw new Error('Failed to fetch active trips');
+
+        const trips = await response.json();
+
+        // Update counter in the dashboard
+        activeTripsCount.textContent = trips.length;
+
+        if (trips.length === 0) {
+          noActiveTrips.style.display = 'block';
+        } else {
+          trips.forEach(trip => {
+            const tripCard = createTripCard(trip);
+            activeTripsContainer.appendChild(tripCard);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading active trips:', error);
+        activeTripsContainer.innerHTML = `<div class="alert alert-danger">Error loading active trips: ${error.message}</div>`;
+      } finally {
+        activeTripsLoading.style.display = 'none';
+      }
+    }
+
+    // Create a trip card element
+    function createTripCard(trip) {
+      const tripDiv = document.createElement('div');
+      tripDiv.className = 'trip-item p-3 rounded mb-3';
+      tripDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5>
+              Employee ID: ${trip.riderId}
+              <span class="badge bg-success ms-2 status-badge-active">Active</span>
+            </h5>
+            <p><strong>Check-In:</strong> ${formatDate(trip.checkInTime)}</p>
+            <p><strong>Location:</strong> ${trip.location || 'Not specified'}</p>
+            ${trip.note ? `<p><strong>Note:</strong> ${trip.note}</p>` : ''}
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-sm check-out-btn" data-trip-id="${trip.id}" data-employee-id="${trip.riderId}" data-checkin-time="${trip.checkInTime}" data-location="${trip.location || 'Not specified'}">Check Out</button>
+          </div>
+        </div>
+      `;
+
+      // Add event listener to the check-out button
+      const checkOutBtn = tripDiv.querySelector('.check-out-btn');
+      checkOutBtn.addEventListener('click', function() {
+        openCheckOutModal(trip.id, trip.riderId, trip.checkInTime, trip.location);
+      });
+
+      return tripDiv;
+    }
+
+    // Open the check-out modal
+    function openCheckOutModal(tripId, employeeId, checkInTime, location) {
+      checkOutTripId.value = tripId;
+      checkOutEmployeeId.textContent = employeeId;
+      checkOutCheckInTime.textContent = formatDate(checkInTime);
+      checkOutLocation.textContent = location || 'Not specified';
+      checkOutNote.value = '';
+      checkOutModal.show();
+    }
+
+    // Handle the check-out confirmation
+    async function handleCheckOut() {
+      try {
+        const tripId = parseInt(checkOutTripId.value);
+        const note = checkOutNote.value.trim();
+
+        // Disable the button and show loading state
+        confirmCheckOutBtn.disabled = true;
+        confirmCheckOutBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+        const response = await fetch('/api/check-out', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tripId, note: note || undefined })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to check out employee');
+        }
+
+        const result = await response.json();
+        
+        // Hide the modal
+        checkOutModal.hide();
+        
+        // Show success message
+        alert(`Employee ${result.riderId} has been successfully checked out.`);
+        
+        // Reload the data
+        loadActiveTrips();
+        loadRecentCheckOuts();
+      } catch (error) {
+        console.error('Error checking out employee:', error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        // Reset button state
+        confirmCheckOutBtn.disabled = false;
+        confirmCheckOutBtn.textContent = 'Check Out';
+      }
+    }
+
+    // Load recent check-outs
+    async function loadRecentCheckOuts() {
+      try {
+        recentCheckOutsLoading.style.display = 'flex';
+        recentCheckOutsTable.style.display = 'none';
+        noRecentCheckOuts.style.display = 'none';
+        recentCheckOutsBody.innerHTML = '';
+
+        // Get today's date at midnight
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Format for the API
+        const startDate = today.toISOString().split('T')[0];
+        const endDate = new Date().toISOString().split('T')[0];
+
+        // Get trip report for today
+        const response = await fetch(`/api/trips/report?startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) throw new Error('Failed to fetch recent check-outs');
+
+        const trips = await response.json();
+
+        // Update dashboard counts
+        totalTripsToday.textContent = trips.length;
+        completedTripsToday.textContent = trips.filter(trip => trip.completed).length;
+
+        // Filter for completed trips with check-out times
+        const checkOuts = trips.filter(trip => trip.checkOutTime);
+
+        if (checkOuts.length === 0) {
+          noRecentCheckOuts.style.display = 'block';
+        } else {
+          checkOuts.forEach(trip => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${trip.riderId}</td>
+              <td>${formatDate(trip.checkInTime)}</td>
+              <td>${trip.checkOutTime ? formatDate(trip.checkOutTime) : 'N/A'}</td>
+              <td>${trip.location || 'Not specified'}</td>
+              <td>${trip.note || ''}</td>
+            `;
+            recentCheckOutsBody.appendChild(row);
+          });
+          recentCheckOutsTable.style.display = 'table';
+        }
+      } catch (error) {
+        console.error('Error loading recent check-outs:', error);
+        recentCheckOutsBody.innerHTML = `<tr><td colspan="5" class="text-danger">Error loading recent check-outs: ${error.message}</td></tr>`;
+        recentCheckOutsTable.style.display = 'table';
+      } finally {
+        recentCheckOutsLoading.style.display = 'none';
+      }
+    }
+
+    // Handle master list upload
+    async function handleMasterListUpload() {
+      const file = masterListFile.files[0];
+      if (!file) {
+        alert('Please select a file first.');
+        return;
+      }
+
+      try {
+        // Disable the button and show loading state
+        uploadMasterListBtn.disabled = true;
+        uploadMasterListBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+
+        // Read the file content
+        const fileContent = await file.text();
+        
+        // Parse the content - expecting one ID per line
+        const employeeIds = fileContent
+          .split(/\r?\n/) // Split by newline
+          .map(line => line.trim())
+          .filter(line => line.length > 0); // Remove empty lines
+
+        if (employeeIds.length === 0) {
+          throw new Error('No valid employee IDs found in the file.');
+        }
+
+        // Post the ID list to the API
+        const response = await fetch('/api/master-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ employeeIds })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update master list');
+        }
+
+        const result = await response.json();
+        
+        alert(`Master list updated successfully. Updated ${result.updated} employees, deactivated ${result.deactivated} employees.`);
+        
+        // Clear the file input
+        masterListFile.value = '';
+      } catch (error) {
+        console.error('Error updating master list:', error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        // Reset button state
+        uploadMasterListBtn.disabled = false;
+        uploadMasterListBtn.textContent = 'Update Master List';
+      }
+    }
+
+    // Handle logout
+    async function handleLogout() {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST'
+        });
+
+        if (!response.ok) {
+          throw new Error('Logout failed');
+        }
+
+        window.location.href = '/login';
+      } catch (error) {
+        console.error('Error logging out:', error);
+        alert('Error logging out. Please try again.');
+      }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check authentication
+      checkAuthentication();
+
+      // Refresh button
+      refreshBtn.addEventListener('click', () => {
+        loadActiveTrips();
+        loadRecentCheckOuts();
+      });
+
+      // Logout button
+      logoutBtn.addEventListener('click', handleLogout);
+
+      // Check out confirmation
+      confirmCheckOutBtn.addEventListener('click', handleCheckOut);
+
+      // Master list upload button
+      uploadMasterListBtn.addEventListener('click', handleMasterListUpload);
+    });
+  </script>
+</body>
+</html>
