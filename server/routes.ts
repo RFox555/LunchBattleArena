@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { 
   insertUserSchema, insertTripSchema, loginSchema, checkInSchema, checkOutSchema,
   insertBusLocationSchema, updateBusLocationSchema, insertBusRatingSchema, busRatingFormSchema,
-  masterListValidationSchema,
+  masterListValidationSchema, driverCheckInSchema, driverCheckOutSchema,
   type Trip, type BusLocation, type BusRating
 } from "@shared/schema";
 import express from "express";
@@ -538,6 +538,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver Check-in API (start shift)  
+  app.post("/api/driver/check-in", authenticateUser, async (req, res) => {
+    try {
+      // Validate that the user is a driver
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can use this endpoint" });
+      }
+      
+      // Validate the request body
+      const result = driverCheckInSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid driver check-in data", 
+          details: result.error.format() 
+        });
+      }
+      
+      const data = result.data;
+      
+      // Check in the driver
+      const updatedDriver = await storage.checkInDriver(
+        req.session.userId!, 
+        data.location,
+        data.note
+      );
+      
+      if (!updatedDriver) {
+        return res.status(500).json({ message: "Failed to check in driver" });
+      }
+      
+      // Return the updated driver info (without password)
+      const { password, ...safeUser } = updatedDriver;
+      console.log("Driver check-in successful", { driverId: updatedDriver.id });
+      return res.status(200).json(safeUser);
+    } catch (error) {
+      console.error("Error in driver check-in API:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Driver Check-out API (end shift)
+  app.post("/api/driver/check-out", authenticateUser, async (req, res) => {
+    try {
+      // Validate that the user is a driver
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can use this endpoint" });
+      }
+      
+      // Validate the request body
+      const result = driverCheckOutSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid driver check-out data", 
+          details: result.error.format() 
+        });
+      }
+      
+      const data = result.data;
+      
+      // Check out the driver
+      const updatedDriver = await storage.checkOutDriver(
+        req.session.userId!,
+        data.note
+      );
+      
+      if (!updatedDriver) {
+        return res.status(500).json({ message: "Failed to check out driver" });
+      }
+      
+      // Return the updated driver info (without password)
+      const { password, ...safeUser } = updatedDriver;
+      console.log("Driver check-out successful", { driverId: updatedDriver.id });
+      return res.status(200).json(safeUser);
+    } catch (error) {
+      console.error("Error in driver check-out API:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Get driver status
+  app.get("/api/driver/status", authenticateUser, async (req, res) => {
+    try {
+      // Validate that the user is a driver
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can use this endpoint" });
+      }
+      
+      // Get the driver's status
+      const status = await storage.getDriverStatus(req.session.userId!);
+      
+      if (!status) {
+        return res.status(404).json({ message: "Driver status not found" });
+      }
+      
+      return res.status(200).json(status);
+    } catch (error) {
+      console.error("Error getting driver status:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   app.patch("/api/trips/:id/complete", authenticateUser, async (req, res) => {
     try {
       // Only drivers can complete trips
