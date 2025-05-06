@@ -791,6 +791,13 @@
         }
         
         // Call the external driver check-in function
+        if (typeof window.checkInDriver !== 'function') {
+          console.error('window.checkInDriver is not a function', window.checkInDriver);
+          errorMessage.textContent = 'Driver check-in functionality not available';
+          errorMessage.style.display = 'block';
+          return;
+        }
+        
         const result = await window.checkInDriver(currentUser.id, location, note || '');
         
         if (result) {
@@ -798,6 +805,13 @@
           successMessage.textContent = 'You have been successfully checked in!';
           successMessage.style.display = 'block';
           errorMessage.style.display = 'none';
+          
+          // Update the local driverStatus from the window object
+          if (window.driverStatus && typeof window.driverStatus === 'object') {
+            driverStatus = window.driverStatus;
+            // Force a check of driver status to update UI
+            await checkDriverStatus();
+          }
         } else {
           errorMessage.textContent = 'Failed to check in. Please try again.';
           errorMessage.style.display = 'block';
@@ -815,6 +829,13 @@
     async function driverCheckOut() {
       try {
         // Call the external driver check-out function
+        if (typeof window.checkOutDriver !== 'function') {
+          console.error('window.checkOutDriver is not a function', window.checkOutDriver);
+          errorMessage.textContent = 'Driver check-out functionality not available';
+          errorMessage.style.display = 'block';
+          return;
+        }
+        
         const result = await window.checkOutDriver(currentUser.id);
         
         if (result) {
@@ -822,6 +843,13 @@
           successMessage.textContent = 'You have been successfully checked out!';
           successMessage.style.display = 'block';
           errorMessage.style.display = 'none';
+          
+          // Update the local driverStatus from the window object
+          if (window.driverStatus && typeof window.driverStatus === 'object') {
+            driverStatus = window.driverStatus;
+            // Force a check of driver status to update UI
+            await checkDriverStatus();
+          }
           
           // Stop scanner if running
           if (isScanning) {

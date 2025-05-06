@@ -134,6 +134,8 @@ async function checkDriverStatus(driverId) {
 
 // Check in the driver
 async function checkInDriver(driverId, location, note = '') {
+  // Make this function available to inline scripts
+  window.checkInDriver = checkInDriver;
   try {
     // Disable the button and show loading state
     const checkInButton = document.getElementById('btn-check-in');
@@ -195,6 +197,8 @@ async function checkInDriver(driverId, location, note = '') {
 
 // Check out the driver
 async function checkOutDriver(driverId, note = '') {
+  // Make this function available to inline scripts
+  window.checkOutDriver = checkOutDriver;
   try {
     // Confirm the action
     if (!confirm('Are you sure you want to check out? You will not be able to scan employee IDs until you check in again.')) {
