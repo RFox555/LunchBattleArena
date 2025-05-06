@@ -26,6 +26,11 @@ export interface IStorage {
   updateUserMasterListStatus(riderId: string, isActive: boolean): Promise<User | undefined>;
   updateMasterList(employeeIds: string[]): Promise<{ updated: number, deactivated: number }>;
   
+  // Driver status operations
+  checkInDriver(driverId: number, location: string, note?: string): Promise<User | undefined>;
+  checkOutDriver(driverId: number, note?: string): Promise<User | undefined>;
+  getDriverStatus(driverId: number): Promise<{ isCheckedIn: boolean; lastCheckInTime?: Date; lastCheckOutTime?: Date } | undefined>;
+  
   // Trip operations
   createTrip(trip: InsertTrip): Promise<Trip>;
   getTrip(id: number): Promise<Trip | undefined>;
@@ -418,6 +423,81 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Driver check-in (start shift)
+  async checkInDriver(driverId: number, location: string, note?: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ 
+          isCheckedIn: true,
+          lastCheckInTime: new Date(),
+          lastCheckOutTime: null
+        })
+        .where(and(
+          eq(users.id, driverId),
+          eq(users.userType, "driver")
+        ))
+        .returning();
+      
+      if (user) {
+        // Log the driver check-in event
+        console.log(`Driver ${driverId} checked in at ${location}${note ? ` with note: ${note}` : ''}`);
+      }
+      
+      return user;
+    } catch (error) {
+      console.error("Error checking in driver:", error);
+      return undefined;
+    }
+  }
+  
+  // Driver check-out (end shift)
+  async checkOutDriver(driverId: number, note?: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ 
+          isCheckedIn: false,
+          lastCheckOutTime: new Date()
+        })
+        .where(and(
+          eq(users.id, driverId),
+          eq(users.userType, "driver"),
+          eq(users.isCheckedIn, true)
+        ))
+        .returning();
+      
+      if (user) {
+        // Log the driver check-out event
+        console.log(`Driver ${driverId} checked out${note ? ` with note: ${note}` : ''}`);
+      }
+      
+      return user;
+    } catch (error) {
+      console.error("Error checking out driver:", error);
+      return undefined;
+    }
+  }
+  
+  // Get driver status
+  async getDriverStatus(driverId: number): Promise<{ isCheckedIn: boolean; lastCheckInTime?: Date; lastCheckOutTime?: Date } | undefined> {
+    try {
+      const user = await this.getUser(driverId);
+      if (!user || user.userType !== "driver") {
+        return undefined;
+      }
+      
+      return {
+        isCheckedIn: user.isCheckedIn || false,
+        lastCheckInTime: user.lastCheckInTime ?? undefined,
+        lastCheckOutTime: user.lastCheckOutTime ?? undefined
+      };
+    } catch (error) {
+      console.error("Error getting driver status:", error);
+      return undefined;
+    }
+  }
+
   // Check and update database schema if needed
   private async updateSchema(): Promise<void> {
     try {
@@ -440,6 +520,35 @@ export class DatabaseStorage implements IStorage {
         await pool.query(`
           ALTER TABLE users 
           ADD COLUMN last_validated TIMESTAMP WITH TIME ZONE;
+        `);
+      }
+      
+      // Check for driver status columns
+      const hasIsCheckedIn = await this.hasColumn("users", "is_checked_in");
+      const hasLastCheckInTime = await this.hasColumn("users", "last_check_in_time");
+      const hasLastCheckOutTime = await this.hasColumn("users", "last_check_out_time");
+      
+      if (!hasIsCheckedIn) {
+        console.log("Adding is_checked_in column to users table");
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN is_checked_in BOOLEAN NOT NULL DEFAULT FALSE;
+        `);
+      }
+      
+      if (!hasLastCheckInTime) {
+        console.log("Adding last_check_in_time column to users table");
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN last_check_in_time TIMESTAMP WITH TIME ZONE;
+        `);
+      }
+      
+      if (!hasLastCheckOutTime) {
+        console.log("Adding last_check_out_time column to users table");
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN last_check_out_time TIMESTAMP WITH TIME ZONE;
         `);
       }
       

@@ -14,6 +14,9 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   onMasterList: boolean("on_master_list").default(true).notNull(), // Flag for master list validation
   lastValidated: timestamp("last_validated"), // When the employee was last validated
+  isCheckedIn: boolean("is_checked_in").default(false), // For drivers to track if they're on duty
+  lastCheckInTime: timestamp("last_check_in_time"), // When driver started their shift
+  lastCheckOutTime: timestamp("last_check_out_time"), // When driver ended their shift
 });
 
 // Database schema for trips table
@@ -91,6 +94,17 @@ export const checkOutSchema = z.object({
   note: z.string().optional(),
 });
 
+// Schema for driver check-in
+export const driverCheckInSchema = z.object({
+  location: z.string().min(1),
+  note: z.string().optional(),
+});
+
+// Schema for driver check-out
+export const driverCheckOutSchema = z.object({
+  note: z.string().optional(),
+});
+
 // Schema for master list validation
 export const masterListValidationSchema = z.object({
   employeeIds: z.array(z.string().min(5).max(5)),
@@ -144,6 +158,8 @@ export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof trips.$inferSelect;
 export type CheckInData = z.infer<typeof checkInSchema>;
 export type CheckOutData = z.infer<typeof checkOutSchema>;
+export type DriverCheckInData = z.infer<typeof driverCheckInSchema>;
+export type DriverCheckOutData = z.infer<typeof driverCheckOutSchema>;
 export type MasterListData = z.infer<typeof masterListValidationSchema>;
 export type InsertBusLocation = z.infer<typeof insertBusLocationSchema>;
 export type BusLocation = typeof busLocations.$inferSelect;
