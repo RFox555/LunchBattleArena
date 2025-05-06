@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  onMasterList: boolean("on_master_list").default(true).notNull(), // Flag for master list validation
+  lastValidated: timestamp("last_validated"), // When the employee was last validated
 });
 
 // Database schema for trips table
@@ -19,7 +21,8 @@ export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   riderId: text("rider_id").notNull(), // Must match a valid rider ID
   driverId: integer("driver_id").notNull(), // References user.id for a driver
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  checkInTime: timestamp("check_in_time").defaultNow().notNull(), // When employee checked in
+  checkOutTime: timestamp("check_out_time"), // When employee checked out (null if not checked out yet)
   location: text("location"),
   completed: boolean("completed").default(false).notNull(),
   note: text("note"),
@@ -82,6 +85,17 @@ export const checkInSchema = z.object({
   note: z.string().optional(),
 });
 
+// Schema for check-out an employee
+export const checkOutSchema = z.object({
+  tripId: z.number().int().positive(),
+  note: z.string().optional(),
+});
+
+// Schema for master list validation
+export const masterListValidationSchema = z.object({
+  employeeIds: z.array(z.string().min(5).max(5)),
+});
+
 // Schema for inserting bus locations
 export const insertBusLocationSchema = createInsertSchema(busLocations).pick({
   driverId: true,
@@ -129,6 +143,8 @@ export type User = typeof users.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof trips.$inferSelect;
 export type CheckInData = z.infer<typeof checkInSchema>;
+export type CheckOutData = z.infer<typeof checkOutSchema>;
+export type MasterListData = z.infer<typeof masterListValidationSchema>;
 export type InsertBusLocation = z.infer<typeof insertBusLocationSchema>;
 export type BusLocation = typeof busLocations.$inferSelect;
 export type UpdateBusLocation = z.infer<typeof updateBusLocationSchema>;
