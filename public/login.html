@@ -173,7 +173,7 @@
           const user = await response.json();
           console.log('Login successful:', user);
           
-          // Redirect based on user type
+          // Redirect based on user type with proper HTML extensions
           if (user.userType === 'rider') {
             window.location.href = '/employee-dashboard.html';
           } else if (user.userType === 'driver') {

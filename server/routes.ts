@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     extensions: ['html']
   }));
   
-  // Add a redirect middleware to handle URLs without .html extension
+  // Custom redirect middleware to ensure HTML page references include the .html extension
   app.use((req, res, next) => {
     // Skip API requests and static files like css, js, images, etc.
     if (req.path.startsWith('/api') || 
@@ -66,13 +66,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return next();
     }
     
-    // Check if a corresponding HTML file exists for this path
+    // Check for specific pages we know should have .html extension
+    const commonPages = ['/login', '/register', '/driver-checkin', '/employee-dashboard', 
+                        '/driver-ratings', '/bus-tracking', '/rate-bus'];
+    
+    if (commonPages.includes(req.path)) {
+      console.log(`Redirecting common page ${req.path} to ${req.path}.html`);
+      return res.redirect(`${req.path}.html`);
+    }
+    
+    // For other paths, check if an HTML file exists
     const htmlPath = path.join(process.cwd(), 'public', `${req.path.substring(1)}.html`);
     if (fs.existsSync(htmlPath)) {
       console.log(`Redirecting ${req.path} to ${req.path}.html`);
       return res.redirect(`${req.path}.html`);
     }
     
+    // If we reach here, let the next middleware handle it
     next();
   });
 
