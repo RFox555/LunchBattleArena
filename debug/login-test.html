@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 300px;
+    }
+    .error {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+    .success {
+      color: #166534;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Transportation Tracking System - Login Test</h1>
+    
+    <div>
+      <h2>Test Login Flows</h2>
+      <button id="test-driver-login">Test Driver Login</button>
+      <button id="test-employee-login">Test Employee Login</button>
+      <button id="test-direct-login">Test Direct Redirect after Login</button>
+      <button id="check-auth-status">Check Auth Status</button>
+      <button id="logout">Logout</button>
+    </div>
+    
+    <div>
+      <h2>Results</h2>
+      <pre id="results">Click a button to run a test...</pre>
+    </div>
+  </div>
+  
+  <script>
+    const resultsDisplay = document.getElementById('results');
+    
+    // Helper to display results
+    function showResult(message, isError = false) {
+      if (isError) {
+        resultsDisplay.innerHTML += `<div class="error">${message}</div>\n`;
+      } else {
+        resultsDisplay.innerHTML += `<div>${message}</div>\n`;
+      }
+      
+      // Auto-scroll to bottom
+      resultsDisplay.scrollTop = resultsDisplay.scrollHeight;
+    }
+    
+    // Clear results
+    function clearResults() {
+      resultsDisplay.innerHTML = '';
+    }
+    
+    // Test driver login via API
+    async function testDriverLogin() {
+      clearResults();
+      showResult('Testing driver login via API...');
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: 'driver1',
+            password: 'password123',
+            userType: 'driver'
+          }),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const user = await response.json();
+          showResult('Login successful, user data:');
+          showResult(JSON.stringify(user, null, 2));
+          showResult('You are now logged in as a driver!', false);
+        } else {
+          const error = await response.json();
+          showResult(`Login failed: ${error.message}`, true);
+        }
+      } catch (error) {
+        showResult(`Error: ${error.message}`, true);
+      }
+    }
+    
+    // Test employee login via API
+    async function testEmployeeLogin() {
+      clearResults();
+      showResult('Testing employee login via API...');
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: 'rider1',
+            password: 'password123',
+            userType: 'rider'
+          }),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const user = await response.json();
+          showResult('Login successful, user data:');
+          showResult(JSON.stringify(user, null, 2));
+          showResult('You are now logged in as an employee!', false);
+        } else {
+          const error = await response.json();
+          showResult(`Login failed: ${error.message}`, true);
+        }
+      } catch (error) {
+        showResult(`Error: ${error.message}`, true);
+      }
+    }
+    
+    // Test direct redirect after login
+    function testDirectRedirect() {
+      clearResults();
+      
+      // This simulates what happens in the login.html page
+      // We're manually creating a form submission here
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/auth/login';
+      form.style.display = 'none';
+      
+      const usernameInput = document.createElement('input');
+      usernameInput.name = 'username';
+      usernameInput.value = 'driver1';
+      
+      const passwordInput = document.createElement('input');
+      passwordInput.name = 'password';
+      passwordInput.value = 'password123';
+      
+      const userTypeInput = document.createElement('input');
+      userTypeInput.name = 'userType';
+      userTypeInput.value = 'driver';
+      
+      form.appendChild(usernameInput);
+      form.appendChild(passwordInput);
+      form.appendChild(userTypeInput);
+      
+      document.body.appendChild(form);
+      
+      showResult('Testing direct login with redirect...');
+      showResult('This will redirect to the driver dashboard if successful.');
+      showResult('You have 3 seconds to cancel (close this tab) if you don\'t want to redirect.');
+      
+      setTimeout(() => {
+        // After login, the page should redirect to the driver dashboard
+        // Get login data to set cookie
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: 'driver1',
+            password: 'password123',
+            userType: 'driver'
+          }),
+          credentials: 'include'
+        })
+        .then(response => {
+          if (response.ok) {
+            // If login is successful, redirect to the driver dashboard
+            window.location.href = '/driver-checkin.html';
+          } else {
+            showResult('Login failed, not redirecting.', true);
+          }
+        })
+        .catch(error => {
+          showResult(`Error: ${error.message}`, true);
+        });
+      }, 3000);
+    }
+    
+    // Check auth status
+    async function checkAuthStatus() {
+      clearResults();
+      showResult('Checking authentication status...');
+      
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const user = await response.json();
+          showResult('You are authenticated!');
+          showResult('User data:');
+          showResult(JSON.stringify(user, null, 2));
+        } else {
+          showResult('You are not authenticated.', true);
+        }
+      } catch (error) {
+        showResult(`Error: ${error.message}`, true);
+      }
+    }
+    
+    // Logout
+    async function logout() {
+      clearResults();
+      showResult('Logging out...');
+      
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          showResult('Logout successful!');
+        } else {
+          showResult('Logout failed.', true);
+        }
+      } catch (error) {
+        showResult(`Error: ${error.message}`, true);
+      }
+    }
+    
+    // Set up event listeners
+    document.getElementById('test-driver-login').addEventListener('click', testDriverLogin);
+    document.getElementById('test-employee-login').addEventListener('click', testEmployeeLogin);
+    document.getElementById('test-direct-login').addEventListener('click', testDirectRedirect);
+    document.getElementById('check-auth-status').addEventListener('click', checkAuthStatus);
+    document.getElementById('logout').addEventListener('click', logout);
+  </script>
+</body>
+</html>
