@@ -72,14 +72,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     if (commonPages.includes(req.path)) {
       console.log(`Redirecting common page ${req.path} to ${req.path}.html`);
-      return res.redirect(`${req.path}.html`);
+      
+      // Add cache control headers to prevent browser from caching redirects
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      return res.redirect(302, `${req.path}.html`);
     }
     
     // For other paths, check if an HTML file exists
     const htmlPath = path.join(process.cwd(), 'public', `${req.path.substring(1)}.html`);
     if (fs.existsSync(htmlPath)) {
       console.log(`Redirecting ${req.path} to ${req.path}.html`);
-      return res.redirect(`${req.path}.html`);
+      
+      // Add cache control headers to prevent browser from caching redirects
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      return res.redirect(302, `${req.path}.html`);
     }
     
     // If we reach here, let the next middleware handle it
