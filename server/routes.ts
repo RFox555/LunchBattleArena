@@ -48,9 +48,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.static(path.join(process.cwd(), 'public'), {
     // Set the index file to be served when a directory is requested
     index: ['index.html'],
-    // Ensure proper handling of HTML files whether the URL includes .html or not
+    // Enable extensions to be omitted in the URL
     extensions: ['html']
   }));
+  
+  // Add a redirect middleware to handle URLs without .html extension
+  app.use((req, res, next) => {
+    // Skip API requests and static files like css, js, images, etc.
+    if (req.path.startsWith('/api') || 
+        req.path.endsWith('.html') || 
+        req.path.endsWith('.css') || 
+        req.path.endsWith('.js') || 
+        req.path.endsWith('.png') || 
+        req.path.endsWith('.jpg') || 
+        req.path.endsWith('.svg') ||
+        req.path === '/') {
+      return next();
+    }
+    
+    // Check if a corresponding HTML file exists for this path
+    const htmlPath = path.join(process.cwd(), 'public', `${req.path.substring(1)}.html`);
+    if (fs.existsSync(htmlPath)) {
+      console.log(`Redirecting ${req.path} to ${req.path}.html`);
+      return res.redirect(`${req.path}.html`);
+    }
+    
+    next();
+  });
 
   // Authentication middleware
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
