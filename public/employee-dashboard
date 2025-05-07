@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="refresh" content="0;url=/employee-dashboard.html">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to <a href="/employee-dashboard.html">employee-dashboard.html</a>...</p>
+  <script>
+    window.location.href = "/employee-dashboard.html";
+  </script>
+</body>
+</html>

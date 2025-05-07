@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="refresh" content="0;url=/driver-checkin.html">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to <a href="/driver-checkin.html">driver-checkin.html</a>...</p>
+  <script>
+    window.location.href = "/driver-checkin.html";
+  </script>
+</body>
+</html>

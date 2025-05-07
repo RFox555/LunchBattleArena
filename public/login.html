@@ -174,13 +174,22 @@
           console.log('Login successful:', user);
           
           // Redirect based on user type with proper HTML extensions
-          if (user.userType === 'rider') {
-            window.location.href = '/employee-dashboard.html';
-          } else if (user.userType === 'driver') {
-            window.location.href = '/driver-checkin.html';
-          } else {
-            window.location.href = '/index.html';
-          }
+          // First store auth cookie, then do the redirect
+          console.log('Login successful, redirecting based on user type:', user.userType);
+          
+          // Add a small delay to ensure cookie is set before redirecting
+          setTimeout(() => {
+            if (user.userType === 'rider') {
+              console.log('Redirecting to employee dashboard...');
+              window.location.replace('/employee-dashboard.html');
+            } else if (user.userType === 'driver') {
+              console.log('Redirecting to driver check-in...');
+              window.location.replace('/driver-checkin.html');
+            } else {
+              console.log('Redirecting to home page...');
+              window.location.replace('/index.html');
+            }
+          }, 100);
         } else {
           // Login failed
           const error = await response.json();

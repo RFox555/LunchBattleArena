@@ -868,15 +868,25 @@
     // Check if user is logged in
     async function checkAuth() {
       try {
-        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        console.log('Checking authentication status...');
+        const response = await fetch('/api/auth/me', { 
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
         
         if (!response.ok) {
+          console.log('Not authenticated, redirecting to login page...');
           // Not logged in, redirect to login
-          window.location.href = '/login.html';
+          window.location.replace('/login.html');
           return;
         }
         
         currentUser = await response.json();
+        console.log('Authentication successful:', currentUser);
         
         // Make sure the user is a driver
         if (currentUser.userType !== 'driver') {
@@ -964,11 +974,15 @@
       }
       
       try {
+        console.log('Logging out...');
         await fetch('/api/auth/logout', {
           method: 'POST',
           credentials: 'include'
         });
-        window.location.href = '/login.html';
+        console.log('Logged out successfully, redirecting to login page...');
+        
+        // Use replace for redirection to avoid history issues
+        window.location.replace('/login.html');
       } catch (error) {
         console.error('Error logging out:', error);
       }
