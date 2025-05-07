@@ -870,8 +870,15 @@
     // Check if user is logged in
     async function checkAuth() {
       try {
+        // Check for emergency direct login cookie
+        if (document.cookie.includes('authenticated=true')) {
+          console.log('Found direct login cookie, proceeding with authentication...');
+        }
+        
         console.log('Checking authentication status...');
-        const response = await fetch('/api/auth/me', { 
+        // Add a timestamp parameter to prevent caching
+        const timestamp = new Date().getTime();
+        const response = await fetch('/api/auth/me?t=' + timestamp, { 
           credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -883,12 +890,15 @@
         if (!response.ok) {
           console.log('Not authenticated, redirecting to login page...');
           // Not logged in, redirect to login
-          window.location.replace('/login.html');
+          document.cookie = "authenticated=false; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+          window.location.href = '/login.html?error=auth_failed&time=' + timestamp;
           return;
         }
         
         currentUser = await response.json();
         console.log('Authentication successful:', currentUser);
+        // Successfully authenticated, set cookie
+        document.cookie = "authenticated=true; path=/";
         
         // Make sure the user is a driver
         if (currentUser.userType !== 'driver') {

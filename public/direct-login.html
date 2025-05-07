@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Login - Transportation Tracking System</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+      color: #333;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #2563eb;
+      margin-top: 0;
+    }
+    .logo {
+      font-size: 42px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .message {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .success {
+      background-color: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .error {
+      background-color: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    .emergency {
+      background-color: #e11d48;
+    }
+    .emergency:hover {
+      background-color: #be123c;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🚌</div>
+    <h1>Emergency Direct Login</h1>
+    
+    <div id="message" class="message"></div>
+    
+    <button id="driver-login" class="emergency">Login as Driver (driver1)</button>
+    <button id="employee-login">Login as Employee (rider1)</button>
+    <button id="normal-login" style="margin-top: 30px; background-color: #4b5563;">Go to Normal Login</button>
+  </div>
+  
+  <script>
+    // DOM Elements
+    const messageElement = document.getElementById('message');
+    const driverLoginBtn = document.getElementById('driver-login');
+    const employeeLoginBtn = document.getElementById('employee-login');
+    const normalLoginBtn = document.getElementById('normal-login');
+    
+    // Display message
+    function showMessage(text, type) {
+      messageElement.textContent = text;
+      messageElement.className = `message ${type}`;
+    }
+    
+    // Perform login
+    async function performLogin(username, password, userType) {
+      try {
+        showMessage('Logging in...', 'success');
+        
+        // Clear any existing session
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+        } catch (e) {
+          // Ignore errors during logout
+        }
+        
+        // Direct AJAX login
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          body: JSON.stringify({
+            username: username,
+            password: password,
+            userType: userType
+          }),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const user = await response.json();
+          
+          // Set cookies for tracking authentication
+          document.cookie = "authenticated=true; path=/";
+          document.cookie = `userId=${user.id}; path=/`;
+          document.cookie = `userType=${user.userType}; path=/`;
+          
+          showMessage(`Login successful as ${user.name}. Redirecting...`, 'success');
+          
+          // Determine redirect target
+          const redirectTarget = userType === 'driver' ? 
+                                '/driver-checkin.html' : 
+                                '/employee-dashboard.html';
+          
+          // Add cache-busting parameter
+          const targetUrl = redirectTarget + '?t=' + new Date().getTime();
+          
+          // Delay redirect to ensure cookies are set
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 1000);
+        } else {
+          const error = await response.json();
+          showMessage(`Login failed: ${error.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        showMessage(`Error: ${error.message}`, 'error');
+      }
+    }
+    
+    // Set up event listeners
+    driverLoginBtn.addEventListener('click', () => {
+      performLogin('driver1', 'password123', 'driver');
+    });
+    
+    employeeLoginBtn.addEventListener('click', () => {
+      performLogin('rider1', 'password123', 'rider');
+    });
+    
+    normalLoginBtn.addEventListener('click', () => {
+      window.location.href = '/login.html';
+    });
+  </script>
+</body>
+</html>
