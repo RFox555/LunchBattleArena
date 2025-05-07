@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     extensions: ['html']
   }));
   
-  // Custom redirect middleware to ensure HTML page references include the .html extension
+  // Custom handler to serve HTML pages directly without redirects
   app.use((req, res, next) => {
     // Skip API requests and static files like css, js, images, etc.
     if (req.path.startsWith('/api') || 
@@ -67,31 +67,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check for specific pages we know should have .html extension
-    const commonPages = ['/login', '/register', '/driver-checkin', '/employee-dashboard', 
+    const knownPages = ['/login', '/register', '/driver-checkin', '/employee-dashboard', 
                         '/driver-ratings', '/bus-tracking', '/rate-bus'];
     
-    if (commonPages.includes(req.path)) {
-      console.log(`Redirecting common page ${req.path} to ${req.path}.html`);
-      
-      // Add cache control headers to prevent browser from caching redirects
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      return res.redirect(302, `${req.path}.html`);
+    // Check if we're requesting a known page
+    if (knownPages.includes(req.path)) {
+      console.log(`Directly serving ${req.path} as ${req.path}.html`);
+      // Directly serve the HTML file without redirect
+      return res.sendFile(path.join(process.cwd(), 'public', `${req.path.substring(1)}.html`));
     }
     
-    // For other paths, check if an HTML file exists
+    // For other paths, check if an HTML file exists and serve directly
     const htmlPath = path.join(process.cwd(), 'public', `${req.path.substring(1)}.html`);
     if (fs.existsSync(htmlPath)) {
-      console.log(`Redirecting ${req.path} to ${req.path}.html`);
-      
-      // Add cache control headers to prevent browser from caching redirects
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      return res.redirect(302, `${req.path}.html`);
+      console.log(`Directly serving ${req.path} as ${req.path}.html`);
+      return res.sendFile(htmlPath);
     }
     
     // If we reach here, let the next middleware handle it

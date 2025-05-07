@@ -175,23 +175,32 @@
           const user = await response.json();
           console.log('Login successful:', user);
           
-          // Redirect based on user type with proper HTML extensions
-          // First store auth cookie, then do the redirect
+          // Show success message before redirecting
+          successMessage.textContent = 'Login successful! Redirecting...';
+          successMessage.style.display = 'block';
+          
           console.log('Login successful, redirecting based on user type:', user.userType);
           
-          // Add a small delay to ensure cookie is set before redirecting
+          // Force longer delay to ensure the session is fully established
           setTimeout(() => {
-            if (user.userType === 'rider') {
-              console.log('Redirecting to employee dashboard...');
-              window.location.replace('/employee-dashboard.html');
-            } else if (user.userType === 'driver') {
-              console.log('Redirecting to driver check-in...');
-              window.location.replace('/driver-checkin.html');
-            } else {
-              console.log('Redirecting to home page...');
-              window.location.replace('/index.html');
+            try {
+              if (user.userType === 'rider') {
+                console.log('Redirecting to employee dashboard...');
+                document.location.href = '/employee-dashboard.html';
+              } else if (user.userType === 'driver') {
+                console.log('Redirecting to driver check-in...');
+                document.location.href = '/driver-checkin.html';
+              } else {
+                console.log('Redirecting to home page...');
+                document.location.href = '/index.html';
+              }
+            } catch (e) {
+              console.error('Redirect error:', e);
+              alert('Login successful but redirect failed. Please click OK and we will try again.');
+              window.location.href = user.userType === 'rider' ? '/employee-dashboard.html' : 
+                                     user.userType === 'driver' ? '/driver-checkin.html' : '/index.html';
             }
-          }, 100);
+          }, 500);
         } else {
           // Login failed
           const error = await response.json();
