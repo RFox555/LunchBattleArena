@@ -10,182 +10,290 @@
       margin: 0;
       padding: 0;
       background-color: #f5f7fa;
-      color: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
     }
-    .container {
-      max-width: 400px;
-      margin: 5rem auto;
-      padding: 2rem;
+
+    .login-container {
+      width: 90%;
+      max-width: 1000px;
       background-color: white;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
     }
-    .logo {
-      font-size: 48px;
-      text-align: center;
-      margin-bottom: 1rem;
+
+    .login-form {
+      flex: 1;
+      padding: 40px;
     }
+
+    .login-banner {
+      flex: 1;
+      background-color: #880E19;
+      color: white;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
     h1 {
-      text-align: center;
-      color: #334155;
       margin-top: 0;
-      margin-bottom: 2rem;
+      color: #e11d48;
+      font-size: 24px;
+      margin-bottom: 30px;
     }
+
+    .banner-title {
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
     .form-group {
-      margin-bottom: 1.5rem;
+      margin-bottom: 20px;
     }
+
     label {
       display: block;
-      margin-bottom: 0.5rem;
+      margin-bottom: 5px;
       font-weight: 500;
-      color: #334155;
+      color: #374151;
     }
+
     input {
       width: 100%;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border: 1px solid #cbd5e1;
+      padding: 12px;
+      border: 1px solid #d1d5db;
       border-radius: 4px;
+      font-size: 16px;
       box-sizing: border-box;
     }
-    input:focus {
-      outline: none;
-      border-color: #e11d48;
-      box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
-    }
-    button {
+
+    .login-btn {
       width: 100%;
-      padding: 0.75rem;
+      padding: 12px;
       background-color: #e11d48;
       color: white;
       border: none;
       border-radius: 4px;
-      font-size: 1rem;
+      font-size: 16px;
       font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s;
+      margin-top: 10px;
     }
-    button:hover {
+
+    .login-btn:hover {
       background-color: #be123c;
     }
-    .message {
-      padding: 0.75rem;
-      margin-bottom: 1rem;
+
+    .error-message {
+      color: #dc2626;
+      font-size: 14px;
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #fee2e2;
       border-radius: 4px;
       display: none;
     }
-    .error {
-      background-color: #fee2e2;
-      color: #b91c1c;
-      border: 1px solid #fca5a5;
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
     }
-    .success {
-      background-color: #dcfce7;
-      color: #15803d;
-      border: 1px solid #86efac;
+
+    .logo {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+      margin-right: 15px;
+    }
+
+    .banner-text {
+      margin-bottom: 30px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .banner-feature {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .banner-feature-icon {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+
+    .banner-features {
+      margin-top: 20px;
+    }
+
+    .links {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .links a {
+      color: #e11d48;
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .login-container {
+        flex-direction: column;
+        height: auto;
+        margin: 20px;
+      }
+
+      .login-banner {
+        display: none;
+      }
     }
   </style>
+  <script src="/js/ensure-extension.js"></script>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">🔐</div>
-    <h1>Admin Login</h1>
-    
-    <div id="error-message" class="message error"></div>
-    <div id="success-message" class="message success"></div>
-    
-    <form id="login-form">
+  <div class="login-container">
+    <div class="login-form">
+      <div class="logo-container">
+        <img src="https://koutfoodgroup.com/wp-content/uploads/2023/03/KFGRedPng.png" alt="Kout Food Group Logo" class="logo">
+        <h1>Admin Portal Login</h1>
+      </div>
+
       <div class="form-group">
         <label for="username">Username</label>
-        <input type="text" id="username" name="username" required autofocus>
+        <input type="text" id="username" name="username" required>
       </div>
-      
+
       <div class="form-group">
         <label for="password">Password</label>
         <input type="password" id="password" name="password" required>
       </div>
-      
-      <input type="hidden" name="userType" value="admin">
-      
-      <button type="submit">Login</button>
-    </form>
-    
-    <p style="text-align: center; margin-top: 1.5rem; color: #64748b;">
-      <a href="/login.html" style="color: #64748b; text-decoration: none;">Back to regular login</a>
-    </p>
+
+      <button id="loginBtn" class="login-btn">Login</button>
+
+      <div id="errorMessage" class="error-message"></div>
+
+      <div class="links">
+        <p>Need to login as employee or driver? <a href="/login.html">Go to standard login</a></p>
+      </div>
+    </div>
+
+    <div class="login-banner">
+      <div class="banner-title">Administration Portal</div>
+      <div class="banner-text">
+        Access the advanced administrative features of the Transportation Tracking System. Manage employee records, view system analytics, and configure system settings.
+      </div>
+
+      <div class="banner-features">
+        <div class="banner-feature">
+          <span class="banner-feature-icon">✓</span>
+          <span>Manage master list of employees</span>
+        </div>
+        <div class="banner-feature">
+          <span class="banner-feature-icon">✓</span>
+          <span>View comprehensive system reports</span>
+        </div>
+        <div class="banner-feature">
+          <span class="banner-feature-icon">✓</span>
+          <span>Configure system parameters</span>
+        </div>
+        <div class="banner-feature">
+          <span class="banner-feature-icon">✓</span>
+          <span>Monitor driver activity</span>
+        </div>
+      </div>
+    </div>
   </div>
-  
+
   <script>
-    // DOM Elements
-    const loginForm = document.getElementById('login-form');
-    const errorMessage = document.getElementById('error-message');
-    const successMessage = document.getElementById('success-message');
-    
-    // Handle form submission
-    loginForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      // Hide messages
-      errorMessage.style.display = 'none';
-      successMessage.style.display = 'none';
-      
-      // Get form data
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      
-      try {
-        // Show loading
-        const submitButton = this.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
-        submitButton.disabled = true;
-        submitButton.textContent = 'Logging in...';
-        
-        // Send login request
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: username,
-            password: password,
-            userType: 'admin'
-          }),
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          // Login successful
-          const user = await response.json();
-          console.log('Login successful:', user);
-          
-          // Only redirect if the user is an admin
-          if (user.userType === 'admin') {
-            // Show success message
-            successMessage.textContent = 'Login successful. Redirecting to admin dashboard...';
-            successMessage.style.display = 'block';
-            
-            // Redirect to admin dashboard
-            setTimeout(() => {
-              window.location.href = '/admin-dashboard.html';
-            }, 1000);
-          } else {
-            errorMessage.textContent = 'Access denied. This account does not have admin privileges.';
-            errorMessage.style.display = 'block';
-          }
-        } else {
-          // Login failed
-          const error = await response.json();
-          errorMessage.textContent = error.message || 'Invalid credentials';
-          errorMessage.style.display = 'block';
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginBtn = document.getElementById('loginBtn');
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const errorMessage = document.getElementById('errorMessage');
+
+      loginBtn.addEventListener('click', handleLogin);
+
+      // Allow login on Enter key press
+      passwordInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          handleLogin();
         }
-      } catch (error) {
-        console.error('Login error:', error);
-        errorMessage.textContent = 'An error occurred during login. Please try again.';
+      });
+
+      async function handleLogin() {
+        // Clear previous errors
+        errorMessage.style.display = 'none';
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!username || !password) {
+          showError('Please enter both username and password.');
+          return;
+        }
+
+        try {
+          loginBtn.textContent = 'Logging in...';
+          loginBtn.disabled = true;
+
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              username,
+              password,
+              userType: 'admin'
+            }),
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Login failed. Please check your credentials.');
+          }
+
+          const userData = await response.json();
+          
+          // Check if the user is an admin
+          if (userData.userType !== 'admin') {
+            throw new Error('Access denied. This portal is for administrators only.');
+          }
+
+          // Login successful, redirect to admin dashboard
+          window.location.href = '/admin-dashboard.html';
+        } catch (error) {
+          console.error('Login error:', error);
+          showError(error.message || 'Login failed. Please try again.');
+          
+          // Reset button
+          loginBtn.textContent = 'Login';
+          loginBtn.disabled = false;
+        }
+      }
+
+      function showError(message) {
+        errorMessage.textContent = message;
         errorMessage.style.display = 'block';
-      } finally {
-        // Reset button
-        const submitButton = this.querySelector('button[type="submit"]');
-        submitButton.disabled = false;
-        submitButton.textContent = 'Login';
       }
     });
   </script>
