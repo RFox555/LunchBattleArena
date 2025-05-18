@@ -126,10 +126,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUserByUsername(data.username);
       
-      // Check credentials
-      if (!user || user.password !== data.password || user.userType !== data.userType) {
-        console.log("Login failed - invalid credentials");
-        return res.status(401).json({ message: "Invalid credentials" });
+      // Special handling for admin login
+      if (data.userType === 'admin') {
+        if (!user || user.password !== data.password || !user.is_admin) {
+          console.log("Admin login failed - invalid credentials or not an admin");
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
+      } else {
+        // Regular user login check
+        if (!user || user.password !== data.password || user.user_type !== data.userType) {
+          console.log("Login failed - invalid credentials");
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
       }
       
       // Regenerate session to prevent session fixation attacks
@@ -142,8 +150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set user session with required data
         console.log("Login successful - setting session data in new session");
         req.session.userId = user.id;
-        // Make sure userType is properly typed
-        req.session.userType = user.userType;
+        // Use the requested userType for session to avoid type issues
+        req.session.userType = data.userType as 'driver' | 'rider' | 'admin';
         req.session.createdAt = new Date().toISOString();
         
         console.log("Session data set, now saving");
