@@ -182,35 +182,17 @@
           
           console.log('Login successful, redirecting based on user type:', user.userType);
           
-          // Set browser cookie to track session status (redundant security)
-          document.cookie = "loginComplete=true; path=/; max-age=3600";
-          document.cookie = "userType=" + user.userType + "; path=/; max-age=3600";
-          document.cookie = "userId=" + user.id + "; path=/; max-age=3600";
-          
-          // Force longer delay with a timestamp to prevent caching issues
-          const timestamp = new Date().getTime();
-          setTimeout(() => {
-            try {
-              // Use straight window.location.replace to force a complete navigation
-              // with no history, preventing back button issues
-              if (user.userType === 'rider') {
-                console.log('Redirecting to employee dashboard...');
-                window.location.replace('/employee-dashboard.html?ts=' + timestamp);
-              } else if (user.userType === 'driver') {
-                console.log('Redirecting to driver check-in...');
-                window.location.replace('/driver-checkin.html?ts=' + timestamp);
-              } else {
-                console.log('Redirecting to home page...');
-                window.location.replace('/index.html?ts=' + timestamp);
-              }
-            } catch (e) {
-              console.error('Redirect error:', e);
-              alert('Login successful but redirect failed. Please click OK and we will try again.');
-              // Fallback with simple location change
-              window.location.href = (user.userType === 'rider' ? '/employee-dashboard.html' : 
-                                     user.userType === 'driver' ? '/driver-checkin.html' : '/index.html') + '?ts=' + timestamp;
-            }
-          }, 1000);
+          // Direct and simple redirect - no cookies, no setTimeout, just basic redirection
+          if (user.userType === 'rider') {
+            console.log('Redirecting to employee dashboard...');
+            window.location.href = '/employee-dashboard.html';
+          } else if (user.userType === 'driver') {
+            console.log('Redirecting to driver check-in...');
+            window.location.href = '/driver-checkin.html';
+          } else {
+            console.log('Redirecting to home page...');
+            window.location.href = '/index.html';
+          }
         } else {
           // Login failed
           const error = await response.json();

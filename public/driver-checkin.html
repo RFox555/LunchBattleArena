@@ -867,50 +867,28 @@
       }
     }
     
-    // Check if user is logged in
+    // Simple function to check auth status, completely rewritten for reliability
+    let authCheckComplete = false;
+    
     async function checkAuth() {
       try {
-        // Check for cookies that indicate a previous successful login
-        if (document.cookie.includes('loginComplete=true') && document.cookie.includes('userType=driver')) {
-          console.log('Found login cookie, proceeding with authentication check...');
-        }
-        
         console.log('Checking authentication status...');
-        // Add a timestamp parameter to prevent caching
-        const timestamp = new Date().getTime();
         
-        // Make the auth check with explicit cache prevention
-        const response = await fetch('/api/auth/me?nocache=' + timestamp, { 
-          credentials: 'include',
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+        // Simple fetch with credentials, avoid extra options that might cause issues
+        const response = await fetch('/api/auth/me', { 
+          credentials: 'include'
         });
         
-        // If auth check fails, clear cookies and redirect to login
         if (!response.ok) {
           console.log('Not authenticated, redirecting to login page...');
-          // Clear all authentication cookies
-          document.cookie = "loginComplete=false; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-          document.cookie = "userType=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-          document.cookie = "userId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-          
-          // Redirect with cache-busting parameter
-          window.location.replace('/login.html?error=auth_failed&ts=' + timestamp);
+          window.location.href = '/login.html';
           return;
         }
         
-        // Parse the user data from the response
+        // Successfully got user data
         currentUser = await response.json();
         console.log('Authentication successful:', currentUser);
-        
-        // Set cookies to mark authentication success
-        document.cookie = "loginComplete=true; path=/; max-age=3600";
-        document.cookie = "userType=" + currentUser.userType + "; path=/; max-age=3600";
-        document.cookie = "userId=" + currentUser.id + "; path=/; max-age=3600";
+        authCheckComplete = true;
         
         // Make sure the user is a driver
         if (currentUser.userType !== 'driver') {
