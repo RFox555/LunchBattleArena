@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+    header {
+      background-color: #e11d48;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+    }
+    .logo {
+      font-size: 24px;
+      margin-right: 10px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0;
+    }
+    .tabs {
+      display: flex;
+      background-color: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      background-color: white;
+      border-bottom: 2px solid #e11d48;
+      color: #e11d48;
+    }
+    .tab-content {
+      display: none;
+      padding: 1.5rem;
+      background-color: white;
+      border-radius: 0 0 8px 8px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .button {
+      background-color: #e11d48;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .button:hover {
+      background-color: #be123c;
+    }
+    .button:disabled {
+      background-color: #f9a8b9;
+      cursor: not-allowed;
+    }
+    .button.secondary {
+      background-color: #64748b;
+    }
+    .button.secondary:hover {
+      background-color: #475569;
+    }
+    .message {
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      display: none;
+    }
+    .error {
+      color: #b91c1c;
+      background-color: #fee2e2;
+      border: 1px solid #fecaca;
+    }
+    .success {
+      color: #15803d;
+      background-color: #dcfce7;
+      border: 1px solid #bbf7d0;
+    }
+    .panel {
+      margin-bottom: 1.5rem;
+    }
+    .login-form {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    input:focus {
+      outline: none;
+      border-color: #e11d48;
+      box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Login Panel -->
+    <div id="login-panel" class="login-form">
+      <h2 style="text-align: center; margin-top: 0;">Driver Login</h2>
+      <div id="login-error" class="message error"></div>
+      <div id="login-success" class="message success"></div>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" value="driver1" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" value="password123" required>
+        </div>
+        
+        <button type="submit" class="button" style="width: 100%;">Log In</button>
+      </form>
+    </div>
+    
+    <!-- Main Interface (hidden until authenticated) -->
+    <div id="main-interface" style="display: none;">
+      <header>
+        <div class="header-left">
+          <div class="logo">🚌</div>
+          <h1>Driver Portal</h1>
+        </div>
+        <button id="logout-button" class="button secondary">Log Out</button>
+      </header>
+      
+      <div class="tabs">
+        <div class="tab active" data-tab="status">Driver Status</div>
+        <div class="tab" data-tab="scan">Scan Employee ID</div>
+        <div class="tab" data-tab="manual">Manual Check-In</div>
+        <div class="tab" data-tab="history">Recent Activity</div>
+      </div>
+      
+      <div id="error-message" class="message error"></div>
+      <div id="success-message" class="message success"></div>
+      
+      <!-- Driver Status Tab -->
+      <div id="status-tab" class="tab-content active">
+        <div class="card">
+          <h2>Welcome, <span id="driver-name">Driver</span>!</h2>
+          <div id="driver-status-panel" class="panel">
+            <div id="status-loading" style="display: none;">Loading status...</div>
+            <div id="status-content">
+              <p>Current Status: <span id="current-status">Checking...</span></p>
+              <p id="check-in-time" style="display: none;">Last Check-In: <span id="last-check-in">N/A</span></p>
+              <p id="check-out-time" style="display: none;">Last Check-Out: <span id="last-check-out">N/A</span></p>
+              <div id="driver-actions">
+                <button id="btn-check-in" class="button">Check In</button>
+                <button id="btn-check-out" class="button secondary" style="display: none;">Check Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- QR Scanner Tab -->
+      <div id="scan-tab" class="tab-content">
+        <div class="card">
+          <h2>Scan Employee ID</h2>
+          <p>Position the QR code in front of the camera.</p>
+          <div id="qr-reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
+          <div style="margin-top: 1rem;">
+            <p>Or enter the code manually:</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="qr-manual-input" placeholder="Enter Employee ID">
+              <button id="qr-manual-submit" class="button">Submit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Manual Check-In Tab -->
+      <div id="manual-tab" class="tab-content">
+        <div class="card">
+          <h2>Manual Check-In</h2>
+          <form id="check-in-form">
+            <div class="form-group">
+              <label for="riderId">Employee ID</label>
+              <input type="text" id="riderId" name="riderId" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="location">Location</label>
+              <input type="text" id="location" name="location" value="Main Office" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="note">Note (Optional)</label>
+              <input type="text" id="note" name="note">
+            </div>
+            
+            <button type="submit" class="button">Check In Employee</button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- History Tab -->
+      <div id="history-tab" class="tab-content">
+        <div class="card">
+          <h2>Recent Check-Ins</h2>
+          <div id="recent-check-ins">
+            <p>Loading recent check-ins...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // DOM Elements
+    const loginPanel = document.getElementById('login-panel');
+    const mainInterface = document.getElementById('main-interface');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const loginSuccess = document.getElementById('login-success');
+    const logoutButton = document.getElementById('logout-button');
+    const welcomeMessage = document.getElementById('driver-name');
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const checkInForm = document.getElementById('check-in-form');
+    const qrManualInput = document.getElementById('qr-manual-input');
+    const qrManualSubmit = document.getElementById('qr-manual-submit');
+    const statusPanel = document.getElementById('driver-status-panel');
+    const statusLoading = document.getElementById('status-loading');
+    const currentStatus = document.getElementById('current-status');
+    const checkInTimeElement = document.getElementById('check-in-time');
+    const lastCheckInTime = document.getElementById('last-check-in');
+    const checkOutTimeElement = document.getElementById('check-out-time');
+    const lastCheckOutTime = document.getElementById('last-check-out');
+    const driverCheckInBtn = document.getElementById('btn-check-in');
+    const driverCheckOutBtn = document.getElementById('btn-check-out');
+    const recentCheckIns = document.getElementById('recent-check-ins');
+    
+    // Global variables
+    let currentUser = null;
+    let html5QrCode = null;
+    let isScanning = false;
+    let driverIsCheckedIn = false;
+    let driverLastCheckInTime = null;
+    let driverLastCheckOutTime = null;
+    
+    // Login form submission
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Clear messages
+      loginError.style.display = 'none';
+      loginSuccess.style.display = 'none';
+      
+      // Get form data
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        // Show loading
+        loginSuccess.textContent = 'Logging in...';
+        loginSuccess.style.display = 'block';
+        
+        // Send login request
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            username, 
+            password, 
+            userType: 'driver'
+          }),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          // Login successful
+          currentUser = await response.json();
+          console.log('Login successful:', currentUser);
+          
+          // Show success message
+          loginSuccess.textContent = 'Login successful!';
+          
+          // Hide login panel, show main interface
+          loginPanel.style.display = 'none';
+          mainInterface.style.display = 'block';
+          
+          // Update welcome message
+          welcomeMessage.textContent = currentUser.name;
+          
+          // Initialize scanner
+          initQrScanner();
+          
+          // Check driver status
+          await checkDriverStatus();
+          
+          // Fetch recent check-ins
+          fetchRecentCheckIns();
+          
+          // Setup driver check-in/check-out buttons
+          driverCheckInBtn.addEventListener('click', driverCheckIn);
+          driverCheckOutBtn.addEventListener('click', driverCheckOut);
+        } else {
+          // Login failed
+          const error = await response.json();
+          loginError.textContent = error.message || 'Invalid credentials';
+          loginError.style.display = 'block';
+          loginSuccess.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        loginError.textContent = 'An error occurred during login';
+        loginError.style.display = 'block';
+        loginSuccess.style.display = 'none';
+      }
+    });
+    
+    // Check driver status
+    async function checkDriverStatus() {
+      try {
+        // Show loading
+        statusPanel.classList.add('loading');
+        statusLoading.style.display = 'block';
+        
+        // Get driver ID
+        const driverId = currentUser.id;
+        
+        // Fetch status
+        const response = await fetch(`/api/drivers/${driverId}/status`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch driver status');
+        }
+        
+        // Parse status data
+        const status = await response.json();
+        console.log('Driver status:', status);
+        
+        // Update state
+        driverIsCheckedIn = status.isCheckedIn;
+        driverLastCheckInTime = status.lastCheckInTime;
+        driverLastCheckOutTime = status.lastCheckOutTime;
+        
+        // Update UI
+        updateDriverStatusUI();
+      } catch (error) {
+        console.error('Error checking driver status:', error);
+        errorMessage.textContent = 'Failed to check driver status';
+        errorMessage.style.display = 'block';
+      } finally {
+        // Hide loading
+        statusPanel.classList.remove('loading');
+        statusLoading.style.display = 'none';
+      }
+    }
+    
+    // Update driver status UI
+    function updateDriverStatusUI() {
+      if (driverIsCheckedIn) {
+        currentStatus.textContent = 'Checked In';
+        currentStatus.style.color = '#15803d';
+        driverCheckInBtn.style.display = 'none';
+        driverCheckOutBtn.style.display = 'inline-block';
+        
+        if (driverLastCheckInTime) {
+          checkInTimeElement.style.display = 'block';
+          lastCheckInTime.textContent = formatDateTime(new Date(driverLastCheckInTime));
+        }
+      } else {
+        currentStatus.textContent = 'Checked Out';
+        currentStatus.style.color = '#b91c1c';
+        driverCheckInBtn.style.display = 'inline-block';
+        driverCheckOutBtn.style.display = 'none';
+        
+        if (driverLastCheckOutTime) {
+          checkOutTimeElement.style.display = 'block';
+          lastCheckOutTime.textContent = formatDateTime(new Date(driverLastCheckOutTime));
+        }
+      }
+    }
+    
+    // Driver check in
+    async function driverCheckIn() {
+      try {
+        // Disable button
+        driverCheckInBtn.disabled = true;
+        
+        // Show loading
+        statusPanel.classList.add('loading');
+        
+        // Get driver ID and location
+        const driverId = currentUser.id;
+        const location = 'Main Office'; // Default location
+        
+        // Send check-in request
+        const response = await fetch(`/api/drivers/${driverId}/check-in`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check in');
+        }
+        
+        // Update status
+        await checkDriverStatus();
+        
+        // Show success message
+        successMessage.textContent = 'Successfully checked in';
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+      } catch (error) {
+        console.error('Error during check-in:', error);
+        errorMessage.textContent = 'Failed to check in';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      } finally {
+        // Enable button
+        driverCheckInBtn.disabled = false;
+        
+        // Hide loading
+        statusPanel.classList.remove('loading');
+      }
+    }
+    
+    // Driver check out
+    async function driverCheckOut() {
+      try {
+        // Disable button
+        driverCheckOutBtn.disabled = true;
+        
+        // Show loading
+        statusPanel.classList.add('loading');
+        
+        // Get driver ID
+        const driverId = currentUser.id;
+        
+        // Send check-out request
+        const response = await fetch(`/api/drivers/${driverId}/check-out`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check out');
+        }
+        
+        // Update status
+        await checkDriverStatus();
+        
+        // Show success message
+        successMessage.textContent = 'Successfully checked out';
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+      } catch (error) {
+        console.error('Error during check-out:', error);
+        errorMessage.textContent = 'Failed to check out';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      } finally {
+        // Enable button
+        driverCheckOutBtn.disabled = false;
+        
+        // Hide loading
+        statusPanel.classList.remove('loading');
+      }
+    }
+    
+    // Initialize QR scanner
+    function initQrScanner() {
+      const qrContainer = document.getElementById('qr-reader');
+      
+      if (html5QrCode) {
+        // Already initialized
+        return;
+      }
+      
+      html5QrCode = new Html5Qrcode('qr-reader');
+      
+      // Error handling if camera access is denied
+      html5QrCode.getState().then(state => {
+        console.log('QR scanner state:', state);
+      }).catch(err => {
+        console.error('Error getting QR scanner state:', err);
+      });
+    }
+    
+    // Start QR scanner
+    function startScanner() {
+      if (!html5QrCode || isScanning) {
+        return;
+      }
+      
+      const config = { fps: 10, qrbox: 250 };
+      
+      html5QrCode.start({ facingMode: 'environment' }, config, onQRCodeSuccess)
+        .then(() => {
+          console.log('QR scanner started');
+          isScanning = true;
+        })
+        .catch(err => {
+          console.error('Error starting QR scanner:', err);
+          
+          // Show manual input as fallback
+          const manualInputSection = document.querySelector('#scan-tab input');
+          if (manualInputSection) {
+            manualInputSection.focus();
+          }
+          
+          // Show error message
+          errorMessage.textContent = 'Could not access camera. Please use manual entry.';
+          errorMessage.style.display = 'block';
+        });
+    }
+    
+    // Stop QR scanner
+    function stopScanner() {
+      if (!html5QrCode || !isScanning) {
+        return;
+      }
+      
+      html5QrCode.stop()
+        .then(() => {
+          console.log('QR scanner stopped');
+          isScanning = false;
+        })
+        .catch(err => {
+          console.error('Error stopping QR scanner:', err);
+        });
+    }
+    
+    // QR code success handler
+    function onQRCodeSuccess(decodedText) {
+      // Stop scanning
+      stopScanner();
+      
+      // Process the QR code
+      console.log('QR code detected:', decodedText);
+      
+      // Check in employee using the QR code (usually the employee ID)
+      checkInEmployee(decodedText);
+    }
+    
+    // Check in employee
+    async function checkInEmployee(riderId, location = 'Main Office', note = '') {
+      try {
+        // Check if driver is checked in
+        if (!driverIsCheckedIn) {
+          alert('You must check in before you can check in employees.');
+          return;
+        }
+        
+        // Show loading
+        successMessage.style.display = 'none';
+        errorMessage.style.display = 'none';
+        
+        // Send check-in request
+        const response = await fetch('/api/trips', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            riderId,
+            driverId: currentUser.id,
+            location,
+            note
+          }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to check in employee');
+        }
+        
+        // Get trip data
+        const trip = await response.json();
+        
+        // Show success message
+        successMessage.textContent = `Successfully checked in employee ${riderId}`;
+        successMessage.style.display = 'block';
+        
+        // Refresh recent check-ins
+        fetchRecentCheckIns();
+        
+        // Clear form
+        if (checkInForm) {
+          checkInForm.reset();
+        }
+        if (qrManualInput) {
+          qrManualInput.value = '';
+        }
+      } catch (error) {
+        console.error('Error checking in employee:', error);
+        errorMessage.textContent = error.message || 'Failed to check in employee';
+        errorMessage.style.display = 'block';
+      }
+    }
+    
+    // Fetch recent check-ins
+    async function fetchRecentCheckIns() {
+      try {
+        // Get driver ID
+        const driverId = currentUser.id;
+        
+        // Fetch recent check-ins
+        const response = await fetch(`/api/trips/driver/${driverId}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch recent check-ins');
+        }
+        
+        // Parse data
+        const trips = await response.json();
+        
+        // Update UI
+        if (trips.length === 0) {
+          recentCheckIns.innerHTML = '<p>No recent check-ins found</p>';
+        } else {
+          let html = '<ul style="list-style: none; padding: 0;">';
+          trips.forEach(trip => {
+            html += `
+              <li style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">
+                <strong>Employee ID:</strong> ${trip.riderId}<br>
+                <strong>Time:</strong> ${formatDateTime(new Date(trip.checkInTime))}<br>
+                <strong>Location:</strong> ${trip.location}
+              </li>
+            `;
+          });
+          html += '</ul>';
+          recentCheckIns.innerHTML = html;
+        }
+      } catch (error) {
+        console.error('Error fetching recent check-ins:', error);
+        recentCheckIns.innerHTML = '<p>Error loading recent check-ins</p>';
+      }
+    }
+    
+    // Format date and time
+    function formatDateTime(date) {
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }).format(date);
+    }
+    
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Stop scanner when switching tabs
+        if (isScanning && tab.dataset.tab !== 'scan') {
+          stopScanner();
+        }
+        
+        // Start scanner when switching to scan tab
+        if (tab.dataset.tab === 'scan' && !isScanning) {
+          startScanner();
+        }
+        
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+    
+    // Handle manual check-in form submission
+    checkInForm.addEventListener('submit', e => {
+      e.preventDefault();
+      
+      const formData = new FormData(checkInForm);
+      checkInEmployee(
+        formData.get('riderId'),
+        formData.get('location'),
+        formData.get('note')
+      );
+    });
+    
+    // Handle manual QR input
+    qrManualSubmit.addEventListener('click', () => {
+      const riderId = qrManualInput.value.trim();
+      if (riderId) {
+        checkInEmployee(riderId);
+      } else {
+        errorMessage.textContent = 'Please enter a valid Employee ID';
+        errorMessage.style.display = 'block';
+      }
+    });
+    
+    // Allow pressing Enter in manual QR input
+    qrManualInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        qrManualSubmit.click();
+      }
+    });
+    
+    // Handle logout
+    logoutButton.addEventListener('click', async () => {
+      try {
+        // Stop scanner if running
+        if (isScanning) {
+          stopScanner();
+        }
+        
+        // Send logout request
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        // Show login panel, hide main interface
+        loginPanel.style.display = 'block';
+        mainInterface.style.display = 'none';
+        
+        // Reset state
+        currentUser = null;
+        isScanning = false;
+        
+        // Clear messages
+        loginError.style.display = 'none';
+        loginSuccess.style.display = 'none';
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
+    });
+  </script>
+  <script src="/js/html5-qrcode.min.js"></script>
+</body>
+</html>
