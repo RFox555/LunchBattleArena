@@ -169,7 +169,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/me", async (req, res) => {
     console.log("Session check - session object exists:", !!req.session);
     console.log("Session check - userId in session:", req.session?.userId);
-    console.log("Session data:", req.session);
     
     if (!req.session || !req.session.userId) {
       console.log("Session check failed - returning 401");
@@ -182,26 +181,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         console.log("Session check - user not found in database");
-        req.session.destroy(() => {});
         return res.status(401).json({ message: "User not found" });
       }
       
       console.log("Session check - user found:", user.username);
       
-      // Touch the session to keep it active
-      req.session.touch();
-      
-      // Return user data (without password)
+      // Create a safe user object without password
       const { password, ...safeUser } = user;
       
-      // Save any session changes before responding
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error in /api/auth/me:", err);
-        }
-        console.log("Session check - responding with user data");
-        return res.status(200).json(safeUser);
-      });
+      // Return user data immediately without additional session manipulation
+      return res.status(200).json(safeUser);
     } catch (error) {
       console.error("Authentication check error:", error);
       return res.status(500).json({ message: "Internal server error" });

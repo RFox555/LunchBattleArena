@@ -867,28 +867,26 @@
       }
     }
     
-    // Simple function to check auth status, completely rewritten for reliability
-    let authCheckComplete = false;
-    
+    // Very simple auth check function, no redirects
     async function checkAuth() {
       try {
         console.log('Checking authentication status...');
         
-        // Simple fetch with credentials, avoid extra options that might cause issues
+        // Most basic fetch possible to avoid any complications
         const response = await fetch('/api/auth/me', { 
-          credentials: 'include'
+          credentials: 'include',
+          method: 'GET'
         });
         
+        // Handle non-OK response
         if (!response.ok) {
-          console.log('Not authenticated, redirecting to login page...');
-          window.location.href = '/login.html';
+          console.error('Error: Could not authenticate. Please log in again.');
           return;
         }
         
         // Successfully got user data
         currentUser = await response.json();
         console.log('Authentication successful:', currentUser);
-        authCheckComplete = true;
         
         // Make sure the user is a driver
         if (currentUser.userType !== 'driver') {
