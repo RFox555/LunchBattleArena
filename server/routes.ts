@@ -32,7 +32,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     session({
       secret: process.env.SESSION_SECRET || "transportation-tracking-system-secret",
       resave: true,
-      saveUninitialized: true,
+      saveUninitialized: false, // Changed to false to avoid creating empty sessions
+      rolling: true, // Reset expiration counter on every response
       cookie: { 
         secure: false, // Set to false for both dev and prod to ensure cookies work
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -118,33 +119,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // Set user session
-      console.log("Login successful - setting session data");
-      req.session.userId = user.id;
-      req.session.userType = user.userType;
-      
-      // Add a timestamp to track when the session was created
-      req.session.createdAt = new Date().toISOString();
-      
-      console.log("User logged in successfully", { 
-        userId: user.id,
-        userType: user.userType,
-        riderId: user.riderId,
-        sessionCreatedAt: req.session.createdAt
-      });
-      
-      // Save the session and wait for it to complete before sending response
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error:", err);
-          return res.status(500).json({ message: "Failed to save session" });
+      // Regenerate session to prevent session fixation attacks
+      return req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error("Session regeneration error:", regenerateErr);
+          return res.status(500).json({ message: "Failed to create session" });
         }
+      
+        // Set user session with required data
+        console.log("Login successful - setting session data in new session");
+        req.session.userId = user.id;
+        // Make sure userType is explicitly typed as 'driver' or 'rider'
+        req.session.userType = user.userType as ('driver' | 'rider');
+        req.session.createdAt = new Date().toISOString();
         
-        console.log("Session saved successfully, sessionID:", req.sessionID);
+        console.log("Session data set, now saving");
         
-        // Return user data (without password)
-        const { password, ...safeUser } = user;
-        return res.status(200).json(safeUser);
+        // Save the session and wait for it to complete before sending response
+        return req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ message: "Failed to save session" });
+          }
+          
+          console.log("Session saved successfully, sessionID:", req.sessionID);
+          console.log("Final session data:", req.session);
+          
+          // Return user data (without password)
+          const { password, ...safeUser } = user;
+          return res.status(200).json(safeUser);
+        });
       });
     } catch (error) {
       console.error("Login error:", error);

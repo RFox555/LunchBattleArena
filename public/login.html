@@ -182,29 +182,16 @@
           
           console.log('Login successful, redirecting based on user type:', user.userType);
           
-          // Verify that we actually have a session before redirecting
-          try {
-            // Check that session is active before redirect
-            const authCheckResponse = await fetch('/api/auth/me', { 
-              credentials: 'include'
-            });
-            const authData = await authCheckResponse.json();
-            console.log('Confirmed auth data before redirect:', authData);
-            
-            // Now do the redirect
-            if (user.userType === 'rider') {
-              console.log('Redirecting to employee dashboard...');
-              document.location.href = '/employee-dashboard.html';
-            } else if (user.userType === 'driver') {
-              console.log('Redirecting to driver check-in...');
-              document.location.href = '/driver-checkin.html';
-            } else {
-              console.log('Redirecting to home page...');
-              document.location.href = '/index.html';
-            }
-          } catch (error) {
-            console.error('Session verification failed, please try again', error);
-            alert('Login successful but session verification failed. Please try again.');
+          // Don't verify session, just redirect immediately
+          if (user.userType === 'rider') {
+            console.log('Redirecting to employee dashboard...');
+            window.location.href = '/employee-dashboard.html';
+          } else if (user.userType === 'driver') {
+            console.log('Redirecting to driver check-in...');
+            window.location.href = '/driver-checkin.html';
+          } else {
+            console.log('Redirecting to home page...');
+            window.location.href = '/index.html';
           }
         } else {
           // Login failed

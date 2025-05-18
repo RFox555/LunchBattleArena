@@ -867,25 +867,35 @@
       }
     }
     
-    // Very simple auth check function, no redirects
+    // Function to directly access login state, completely rewritten
     async function checkAuth() {
       try {
-        console.log('Checking authentication status...');
+        console.log('Accessing login state...');
         
-        // Most basic fetch possible to avoid any complications
-        const response = await fetch('/api/auth/me', { 
-          credentials: 'include',
-          method: 'GET'
-        });
+        // Direct access approach
+        if (document.cookie.indexOf('connect.sid') === -1) {
+          console.error('No session cookie found');
+          window.location.href = '/login.html';
+          return;
+        }
         
-        // Handle non-OK response
-        if (!response.ok) {
-          console.error('Error: Could not authenticate. Please log in again.');
+        console.log('Session cookie found, attempting to get user data');
+        
+        // Simple fetch with no extra options
+        const response = await fetch('/api/auth/me', {credentials: 'include'});
+        
+        // Parse the response
+        const data = await response.json();
+        
+        // If we get an error message, redirect to login
+        if (data.message === "Not authenticated") {
+          console.error('Not authenticated, redirecting to login page');
+          window.location.href = '/login.html';
           return;
         }
         
         // Successfully got user data
-        currentUser = await response.json();
+        currentUser = data;
         console.log('Authentication successful:', currentUser);
         
         // Make sure the user is a driver
