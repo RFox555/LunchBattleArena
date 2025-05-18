@@ -7,7 +7,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  userType: text("user_type").notNull(), // "driver" or "rider"
+  userType: text("user_type").notNull(), // "driver", "rider", or "admin"
   riderId: text("rider_id"), // 5-digit unique ID for riders
   name: text("name").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   isCheckedIn: boolean("is_checked_in").default(false), // For drivers to track if they're on duty
   lastCheckInTime: timestamp("last_check_in_time"), // When driver started their shift
   lastCheckOutTime: timestamp("last_check_out_time"), // When driver ended their shift
+  isAdmin: boolean("is_admin").default(false) // For admin privileges
 });
 
 // Database schema for trips table

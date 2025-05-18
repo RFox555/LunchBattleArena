@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Transportation Tracking System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f5f7fa;
+      color: #1e293b;
+      padding-bottom: 2rem;
+    }
+    .navbar {
+      background-color: #e11d48;
+    }
+    .navbar-brand {
+      font-weight: 600;
+      color: white !important;
+    }
+    .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+    }
+    .nav-link:hover {
+      color: white !important;
+    }
+    .card {
+      margin-bottom: 1.5rem;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .card-header {
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 600;
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stats-card {
+      border-left: 4px solid #e11d48;
+    }
+    .stats-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .stats-label {
+      font-size: 0.875rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .admin-badge {
+      background-color: #e11d48;
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      margin-left: 0.5rem;
+    }
+    .tab-pane {
+      padding-top: 1rem;
+    }
+    .form-switch .form-check-input:checked {
+      background-color: #e11d48;
+      border-color: #e11d48;
+    }
+    .badge-success {
+      background-color: #10b981;
+    }
+    .badge-danger {
+      background-color: #ef4444;
+    }
+    .badge-warning {
+      background-color: #f59e0b;
+    }
+    .btn-primary {
+      background-color: #e11d48;
+      border-color: #e11d48;
+    }
+    .btn-primary:hover {
+      background-color: #be123c;
+      border-color: #be123c;
+    }
+    .btn-outline-primary {
+      color: #e11d48;
+      border-color: #e11d48;
+    }
+    .btn-outline-primary:hover {
+      background-color: #e11d48;
+      border-color: #e11d48;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <span>🚌</span> Transportation Admin
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="masterListTab">Master List</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="usersTab">Users</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="tripsTab">Trips</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="logoutButton">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Welcome Card -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 class="mb-1">Welcome, <span id="adminName">Administrator</span><span class="admin-badge">Admin</span></h1>
+            <p class="text-muted mb-0">Here's what's happening in your transportation system today.</p>
+          </div>
+          <div class="text-end">
+            <p class="mb-0"><strong>Current Date:</strong> <span id="currentDate"></span></p>
+            <p class="mb-0"><strong>Last Login:</strong> <span id="lastLogin">Never</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Stats Row -->
+    <div class="row">
+      <!-- Active Trips -->
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="stats-number" id="activeTripsCount">0</div>
+            <div class="stats-label">Active Trips</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Active Drivers -->
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="stats-number" id="activeDriversCount">0</div>
+            <div class="stats-label">Active Drivers</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Employees on Masterlist -->
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="stats-number" id="activeEmployeesCount">0</div>
+            <div class="stats-label">Active Employees</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Total Trips Today -->
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="stats-number" id="todayTripsCount">0</div>
+            <div class="stats-label">Today's Trips</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Content Tabs -->
+    <div class="tab-content mt-4" id="tabContent">
+      <!-- Dashboard Tab -->
+      <div class="tab-pane fade show active" id="dashboard">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">Recent Trip Activity</div>
+              <div class="card-body">
+                <div id="recentTripsLoading" class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+                <div id="recentTripsContent" style="display: none;">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Employee ID</th>
+                        <th>Driver</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="recentTripsTable">
+                      <!-- Trip data will be loaded here -->
+                    </tbody>
+                  </table>
+                  <div class="text-center">
+                    <button id="viewAllTripsBtn" class="btn btn-sm btn-outline-primary">View All Trips</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">Driver Status</div>
+              <div class="card-body">
+                <div id="driversStatusLoading" class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+                <div id="driversStatusContent" style="display: none;">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Driver</th>
+                        <th>Status</th>
+                        <th>Since</th>
+                      </tr>
+                    </thead>
+                    <tbody id="driversStatusTable">
+                      <!-- Driver status data will be loaded here -->
+                    </tbody>
+                  </table>
+                  <div class="text-center">
+                    <button id="viewAllDriversBtn" class="btn btn-sm btn-outline-primary">View All Drivers</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Master List Tab -->
+      <div class="tab-pane fade" id="masterList">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Employee Master List</span>
+            <button class="btn btn-sm btn-primary" id="uploadMasterListBtn">Upload New Master List</button>
+          </div>
+          <div class="card-body">
+            <!-- File Upload Form -->
+            <div id="uploadMasterListForm" style="display: none;">
+              <div class="mb-3">
+                <label for="masterListFile" class="form-label">Employee IDs (CSV or TXT)</label>
+                <input class="form-control" type="file" id="masterListFile" accept=".csv,.txt">
+                <div class="form-text">File should contain one employee ID per line (each ID should be 5 characters).</div>
+              </div>
+              <div class="mb-3 d-flex gap-2">
+                <button id="submitMasterListBtn" class="btn btn-primary">Upload List</button>
+                <button id="cancelUploadBtn" class="btn btn-outline-secondary">Cancel</button>
+              </div>
+              <div id="uploadMessage" class="alert" style="display: none;"></div>
+            </div>
+            
+            <!-- Master List Table -->
+            <div id="masterListTableContainer">
+              <div id="masterListLoading" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+              <div id="masterListContent" style="display: none;">
+                <div class="mb-3">
+                  <input type="text" class="form-control" id="searchEmployee" placeholder="Search employee by ID or name...">
+                </div>
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Employee ID</th>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Status</th>
+                      <th>Last Validated</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="masterListTable">
+                    <!-- Employee data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Users Tab -->
+      <div class="tab-pane fade" id="users">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>User Management</span>
+            <button class="btn btn-sm btn-primary" id="createUserBtn">Create New User</button>
+          </div>
+          <div class="card-body">
+            <ul class="nav nav-tabs mb-3" id="userTypeTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-users-tab" data-bs-toggle="tab" data-bs-target="#all-users" type="button" role="tab">All Users</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="drivers-tab" data-bs-toggle="tab" data-bs-target="#drivers" type="button" role="tab">Drivers</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button" role="tab">Employees</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab">Admins</button>
+              </li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="all-users" role="tabpanel">
+                <div id="allUsersLoading" class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+                <div id="allUsersContent" style="display: none;">
+                  <div class="mb-3">
+                    <input type="text" class="form-control" id="searchUser" placeholder="Search user by name or username...">
+                  </div>
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="allUsersTable">
+                      <!-- User data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- Other user type tabs will be populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Trips Tab -->
+      <div class="tab-pane fade" id="trips">
+        <div class="card">
+          <div class="card-header">Trip History</div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="tripDateRange" class="form-label">Date Range</label>
+                <select id="tripDateRange" class="form-select">
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+              <div class="col-md-4" id="customDateRangeContainer" style="display: none;">
+                <div class="row">
+                  <div class="col-6">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" id="startDate" class="form-control">
+                  </div>
+                  <div class="col-6">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" id="endDate" class="form-control">
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button id="applyDateFilter" class="btn btn-primary">Apply Filter</button>
+              </div>
+            </div>
+            
+            <div id="tripsLoading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div id="tripsContent" style="display: none;">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Trip ID</th>
+                    <th>Employee ID</th>
+                    <th>Driver</th>
+                    <th>Check-In Time</th>
+                    <th>Check-Out Time</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tripsTable">
+                  <!-- Trip data will be loaded here -->
+                </tbody>
+              </table>
+              <div id="tripsPagination" class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                  <span id="tripsShowing">Showing 1-10 of 100</span>
+                </div>
+                <nav>
+                  <ul class="pagination mb-0">
+                    <li class="page-item disabled">
+                      <a class="page-link" href="#" id="tripsPrevPage">Previous</a>
+                    </li>
+                    <li class="page-item active">
+                      <a class="page-link" href="#">1</a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="#">2</a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="#">3</a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="#" id="tripsNextPage">Next</a>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bootstrap JS and Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // DOM Elements
+    const adminNameElement = document.getElementById('adminName');
+    const currentDateElement = document.getElementById('currentDate');
+    const logoutButton = document.getElementById('logoutButton');
+    
+    // Navigation Tabs
+    const masterListTab = document.getElementById('masterListTab');
+    const usersTab = document.getElementById('usersTab');
+    const tripsTab = document.getElementById('tripsTab');
+    
+    // Tab Content
+    const dashboard = document.getElementById('dashboard');
+    const masterList = document.getElementById('masterList');
+    const users = document.getElementById('users');
+    const trips = document.getElementById('trips');
+    
+    // Master List Elements
+    const uploadMasterListBtn = document.getElementById('uploadMasterListBtn');
+    const uploadMasterListForm = document.getElementById('uploadMasterListForm');
+    const submitMasterListBtn = document.getElementById('submitMasterListBtn');
+    const cancelUploadBtn = document.getElementById('cancelUploadBtn');
+    const masterListFile = document.getElementById('masterListFile');
+    const uploadMessage = document.getElementById('uploadMessage');
+    const masterListLoading = document.getElementById('masterListLoading');
+    const masterListContent = document.getElementById('masterListContent');
+    const masterListTable = document.getElementById('masterListTable');
+    
+    // Current user data
+    let currentUser = null;
+    
+    // Initialize the dashboard
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Set current date
+      currentDateElement.textContent = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Check authentication
+      try {
+        await checkAuth();
+        
+        // Load initial data
+        loadDashboardData();
+      } catch (error) {
+        console.error('Authentication error:', error);
+        window.location.href = '/admin-login.html';
+      }
+      
+      // Set up event listeners
+      setupEventListeners();
+    });
+    
+    // Check if user is authenticated and is an admin
+    async function checkAuth() {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Not authenticated');
+      }
+      
+      currentUser = await response.json();
+      
+      // Check if user is an admin
+      if (currentUser.userType !== 'admin') {
+        throw new Error('Not authorized');
+      }
+      
+      // Update admin name
+      adminNameElement.textContent = currentUser.name;
+      
+      return currentUser;
+    }
+    
+    // Load dashboard data
+    async function loadDashboardData() {
+      try {
+        // Load stats
+        await loadStats();
+        
+        // Load recent trips
+        await loadRecentTrips();
+        
+        // Load driver status
+        await loadDriverStatus();
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    }
+    
+    // Load stats
+    async function loadStats() {
+      // This would normally fetch from the API
+      document.getElementById('activeTripsCount').textContent = '12';
+      document.getElementById('activeDriversCount').textContent = '8';
+      document.getElementById('activeEmployeesCount').textContent = '156';
+      document.getElementById('todayTripsCount').textContent = '42';
+    }
+    
+    // Load recent trips
+    async function loadRecentTrips() {
+      try {
+        const response = await fetch('/api/trips/recent?limit=5', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load recent trips');
+        }
+        
+        const trips = await response.json();
+        
+        // Update UI
+        const recentTripsTable = document.getElementById('recentTripsTable');
+        recentTripsTable.innerHTML = '';
+        
+        if (trips.length === 0) {
+          recentTripsTable.innerHTML = '<tr><td colspan="4" class="text-center">No recent trips found</td></tr>';
+        } else {
+          trips.forEach(trip => {
+            const row = document.createElement('tr');
+            
+            // Format check-in time
+            const checkInTime = new Date(trip.checkInTime);
+            const formattedTime = checkInTime.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            // Determine status badge
+            let statusBadge;
+            if (trip.completed) {
+              statusBadge = '<span class="badge bg-success">Completed</span>';
+            } else if (trip.checkOutTime) {
+              statusBadge = '<span class="badge bg-warning">Checked Out</span>';
+            } else {
+              statusBadge = '<span class="badge bg-primary">Active</span>';
+            }
+            
+            row.innerHTML = `
+              <td>${trip.riderId}</td>
+              <td>Driver #${trip.driverId}</td>
+              <td>${formattedTime}</td>
+              <td>${statusBadge}</td>
+            `;
+            
+            recentTripsTable.appendChild(row);
+          });
+        }
+        
+        // Show content
+        document.getElementById('recentTripsLoading').style.display = 'none';
+        document.getElementById('recentTripsContent').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading recent trips:', error);
+      }
+    }
+    
+    // Load driver status
+    async function loadDriverStatus() {
+      try {
+        const response = await fetch('/api/users?userType=driver', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load driver status');
+        }
+        
+        const drivers = await response.json();
+        
+        // Update UI
+        const driversStatusTable = document.getElementById('driversStatusTable');
+        driversStatusTable.innerHTML = '';
+        
+        if (drivers.length === 0) {
+          driversStatusTable.innerHTML = '<tr><td colspan="3" class="text-center">No drivers found</td></tr>';
+        } else {
+          drivers.forEach(driver => {
+            const row = document.createElement('tr');
+            
+            // Determine status badge
+            let statusBadge;
+            let sinceTimed = '';
+            
+            if (driver.isCheckedIn) {
+              statusBadge = '<span class="badge bg-success">On Duty</span>';
+              if (driver.lastCheckInTime) {
+                const checkInTime = new Date(driver.lastCheckInTime);
+                sinceTimed = checkInTime.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              }
+            } else {
+              statusBadge = '<span class="badge bg-secondary">Off Duty</span>';
+              if (driver.lastCheckOutTime) {
+                const checkOutTime = new Date(driver.lastCheckOutTime);
+                sinceTimed = checkOutTime.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              }
+            }
+            
+            row.innerHTML = `
+              <td>${driver.name}</td>
+              <td>${statusBadge}</td>
+              <td>${sinceTimed || 'N/A'}</td>
+            `;
+            
+            driversStatusTable.appendChild(row);
+          });
+        }
+        
+        // Show content
+        document.getElementById('driversStatusLoading').style.display = 'none';
+        document.getElementById('driversStatusContent').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading driver status:', error);
+      }
+    }
+    
+    // Load master list
+    async function loadMasterList() {
+      try {
+        masterListLoading.style.display = 'block';
+        masterListContent.style.display = 'none';
+        
+        const response = await fetch('/api/users?userType=rider', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load master list');
+        }
+        
+        const employees = await response.json();
+        
+        // Update UI
+        masterListTable.innerHTML = '';
+        
+        if (employees.length === 0) {
+          masterListTable.innerHTML = '<tr><td colspan="6" class="text-center">No employees found</td></tr>';
+        } else {
+          employees.forEach(employee => {
+            const row = document.createElement('tr');
+            
+            // Format last validated date
+            let lastValidated = 'Never';
+            if (employee.lastValidated) {
+              const validationDate = new Date(employee.lastValidated);
+              lastValidated = validationDate.toLocaleDateString('en-US');
+            }
+            
+            // Determine status badge
+            const statusBadge = employee.onMasterList ? 
+              '<span class="badge bg-success">Active</span>' : 
+              '<span class="badge bg-danger">Inactive</span>';
+            
+            row.innerHTML = `
+              <td>${employee.riderId || 'N/A'}</td>
+              <td>${employee.name}</td>
+              <td>${employee.username}</td>
+              <td>${statusBadge}</td>
+              <td>${lastValidated}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary toggle-status-btn" data-rider-id="${employee.riderId}" data-status="${employee.onMasterList ? 'active' : 'inactive'}">
+                  ${employee.onMasterList ? 'Deactivate' : 'Activate'}
+                </button>
+              </td>
+            `;
+            
+            masterListTable.appendChild(row);
+          });
+          
+          // Add event listeners to toggle buttons
+          document.querySelectorAll('.toggle-status-btn').forEach(button => {
+            button.addEventListener('click', toggleEmployeeStatus);
+          });
+        }
+        
+        // Show content
+        masterListLoading.style.display = 'none';
+        masterListContent.style.display = 'block';
+      } catch (error) {
+        console.error('Error loading master list:', error);
+        masterListLoading.style.display = 'none';
+        masterListContent.innerHTML = `
+          <div class="alert alert-danger">
+            Failed to load master list: ${error.message}
+          </div>
+        `;
+        masterListContent.style.display = 'block';
+      }
+    }
+    
+    // Toggle employee status
+    async function toggleEmployeeStatus(event) {
+      const button = event.currentTarget;
+      const riderId = button.dataset.riderId;
+      const currentStatus = button.dataset.status === 'active';
+      
+      try {
+        // Disable button
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${currentStatus ? 'Deactivating...' : 'Activating...'}`;
+        
+        // Send request to update status
+        const response = await fetch(`/api/users/${riderId}/master-list-status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            onMasterList: !currentStatus
+          }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update employee status');
+        }
+        
+        // Reload master list
+        await loadMasterList();
+      } catch (error) {
+        console.error('Error toggling employee status:', error);
+        alert(`Failed to update status: ${error.message}`);
+        
+        // Reset button
+        button.disabled = false;
+        button.textContent = currentStatus ? 'Deactivate' : 'Activate';
+      }
+    }
+    
+    // Upload master list
+    async function uploadMasterList() {
+      try {
+        if (!masterListFile.files || masterListFile.files.length === 0) {
+          showUploadMessage('Please select a file to upload', 'danger');
+          return;
+        }
+        
+        const file = masterListFile.files[0];
+        
+        // Disable button
+        submitMasterListBtn.disabled = true;
+        submitMasterListBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+        
+        // Read file content
+        const fileContent = await readFileAsText(file);
+        
+        // Parse employee IDs
+        const employeeIds = fileContent
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(line => line.length === 5);
+        
+        if (employeeIds.length === 0) {
+          throw new Error('No valid employee IDs found in the file. Each ID should be 5 characters long.');
+        }
+        
+        // Send request to update master list
+        const response = await fetch('/api/master-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ employeeIds }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to update master list');
+        }
+        
+        const result = await response.json();
+        
+        // Show success message
+        showUploadMessage(`Master list updated successfully. ${result.updated} employees activated, ${result.deactivated} employees deactivated.`, 'success');
+        
+        // Clear file input
+        masterListFile.value = '';
+        
+        // Reload master list
+        await loadMasterList();
+      } catch (error) {
+        console.error('Error uploading master list:', error);
+        showUploadMessage(`Failed to upload master list: ${error.message}`, 'danger');
+      } finally {
+        // Reset button
+        submitMasterListBtn.disabled = false;
+        submitMasterListBtn.textContent = 'Upload List';
+      }
+    }
+    
+    // Read file as text
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsText(file);
+      });
+    }
+    
+    // Show upload message
+    function showUploadMessage(message, type) {
+      uploadMessage.textContent = message;
+      uploadMessage.className = `alert alert-${type}`;
+      uploadMessage.style.display = 'block';
+      
+      setTimeout(() => {
+        uploadMessage.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Setup event listeners
+    function setupEventListeners() {
+      // Logout button
+      logoutButton.addEventListener('click', async () => {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          
+          window.location.href = '/admin-login.html';
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      });
+      
+      // Tab navigation
+      masterListTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        showTab('masterList');
+        loadMasterList();
+      });
+      
+      usersTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        showTab('users');
+        // Load users data here
+      });
+      
+      tripsTab.addEventListener('click', (e) => {
+        e.preventDefault();
+        showTab('trips');
+        // Load trips data here
+      });
+      
+      // Master list file upload
+      uploadMasterListBtn.addEventListener('click', () => {
+        uploadMasterListForm.style.display = 'block';
+      });
+      
+      cancelUploadBtn.addEventListener('click', () => {
+        uploadMasterListForm.style.display = 'none';
+        uploadMessage.style.display = 'none';
+        masterListFile.value = '';
+      });
+      
+      submitMasterListBtn.addEventListener('click', uploadMasterList);
+      
+      // Trip date range filter
+      document.getElementById('tripDateRange').addEventListener('change', (e) => {
+        const customContainer = document.getElementById('customDateRangeContainer');
+        customContainer.style.display = e.target.value === 'custom' ? 'block' : 'none';
+      });
+    }
+    
+    // Show tab
+    function showTab(tabId) {
+      // Hide all tabs
+      dashboard.classList.remove('show', 'active');
+      masterList.classList.remove('show', 'active');
+      users.classList.remove('show', 'active');
+      trips.classList.remove('show', 'active');
+      
+      // Show selected tab
+      document.getElementById(tabId).classList.add('show', 'active');
+      
+      // Update active tab in nav
+      document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      // Find and activate the correct tab
+      const tabMap = {
+        'dashboard': document.querySelector('.navbar-nav .nav-link[href="#"]'),
+        'masterList': masterListTab,
+        'users': usersTab,
+        'trips': tripsTab
+      };
+      
+      tabMap[tabId].classList.add('active');
+    }
+  </script>
+</body>
+</html>

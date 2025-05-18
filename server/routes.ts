@@ -129,8 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set user session with required data
         console.log("Login successful - setting session data in new session");
         req.session.userId = user.id;
-        // Make sure userType is explicitly typed as 'driver' or 'rider'
-        req.session.userType = user.userType as ('driver' | 'rider');
+        // Make sure userType is properly typed
+        req.session.userType = user.userType;
         req.session.createdAt = new Date().toISOString();
         
         console.log("Session data set, now saving");
@@ -260,9 +260,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update master list of active employees
   app.post("/api/master-list", authenticateUser, async (req, res) => {
     try {
-      // Only drivers can update the master list
-      if (req.session.userType !== "driver") {
-        return res.status(403).json({ message: "Only drivers can update the master list" });
+      // Only admins can update the master list
+      if (req.session.userType !== "admin") {
+        return res.status(403).json({ message: "Only administrators can update the master list" });
       }
       
       // Validate the request body
