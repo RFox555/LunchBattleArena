@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Master List Manager</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fa;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    header {
+      margin-bottom: 2rem;
+    }
+    h1 {
+      color: #e11d48;
+      margin-top: 0;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    input[type="file"] {
+      display: block;
+      width: 100%;
+      padding: 0.5rem;
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+    }
+    .form-text {
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+    .button {
+      display: inline-block;
+      background-color: #e11d48;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+    .button:hover {
+      background-color: #be123c;
+    }
+    .button:disabled {
+      background-color: #f9a8b9;
+      cursor: not-allowed;
+    }
+    .message {
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    .success {
+      background-color: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+    .steps {
+      list-style-type: decimal;
+      padding-left: 1.5rem;
+    }
+    .note {
+      background-color: #f0f9ff;
+      border-left: 4px solid #0ea5e9;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    .result {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background-color: #f8fafc;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Employee Master List Manager</h1>
+      <p>Upload and manage the active employee master list</p>
+    </header>
+    
+    <div class="card">
+      <h2>Instructions</h2>
+      <ol class="steps">
+        <li>Create a text file (.txt) with one employee ID per line.</li>
+        <li>Each ID should be 5 characters long (the system validates this automatically).</li>
+        <li>Upload the file using the form below.</li>
+        <li>The system will update the master list, marking employees as active or inactive based on their presence in the file.</li>
+      </ol>
+      <div class="note">
+        <strong>Note:</strong> Only drivers can upload the master list. You must be logged in as a driver to use this feature.
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>Upload Master List</h2>
+      <div class="form-group">
+        <label for="masterListFile">Employee IDs File</label>
+        <input type="file" id="masterListFile" accept=".txt,.csv">
+        <div class="form-text">File should contain one employee ID per line (5 characters each).</div>
+      </div>
+      <button id="uploadButton" class="button">Upload Master List</button>
+      <div id="message" class="message" style="display: none;"></div>
+    </div>
+    
+    <div id="result" class="result">
+      <h2>Upload Results</h2>
+      <div id="resultSummary"></div>
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Updated (Active)</td>
+            <td id="updatedCount">0</td>
+          </tr>
+          <tr>
+            <td>Deactivated</td>
+            <td id="deactivatedCount">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="card">
+      <h2>Current Active Employees</h2>
+      <button id="refreshButton" class="button">Refresh List</button>
+      <div id="employeeList">
+        <p>Click the refresh button to see the current list of active employees.</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // DOM Elements
+    const masterListFile = document.getElementById('masterListFile');
+    const uploadButton = document.getElementById('uploadButton');
+    const refreshButton = document.getElementById('refreshButton');
+    const messageElement = document.getElementById('message');
+    const resultElement = document.getElementById('result');
+    const resultSummary = document.getElementById('resultSummary');
+    const updatedCount = document.getElementById('updatedCount');
+    const deactivatedCount = document.getElementById('deactivatedCount');
+    const employeeList = document.getElementById('employeeList');
+    
+    // Check authentication on page load
+    checkAuthentication();
+    
+    // Upload master list
+    uploadButton.addEventListener('click', async () => {
+      if (!masterListFile.files || masterListFile.files.length === 0) {
+        showMessage('Please select a file to upload', 'error');
+        return;
+      }
+      
+      const file = masterListFile.files[0];
+      
+      try {
+        // Show loading state
+        uploadButton.disabled = true;
+        uploadButton.textContent = 'Uploading...';
+        hideMessage();
+        
+        // Read file contents
+        const text = await readFileAsText(file);
+        
+        // Parse employee IDs
+        const employeeIds = parseEmployeeIds(text);
+        
+        if (employeeIds.length === 0) {
+          throw new Error('No valid employee IDs found in the file. Each ID should be 5 characters long.');
+        }
+        
+        // Send to API
+        const response = await fetch('/api/master-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ employeeIds }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to update master list');
+        }
+        
+        const result = await response.json();
+        
+        // Show success message
+        showMessage(`Master list updated successfully. ${result.updated} employees activated, ${result.deactivated} employees deactivated.`, 'success');
+        
+        // Update result display
+        updatedCount.textContent = result.updated;
+        deactivatedCount.textContent = result.deactivated;
+        resultSummary.textContent = `Total IDs processed: ${employeeIds.length}`;
+        resultElement.style.display = 'block';
+        
+        // Clear file input
+        masterListFile.value = '';
+        
+        // Refresh employee list
+        fetchEmployeeList();
+      } catch (error) {
+        console.error('Error updating master list:', error);
+        showMessage(`Error: ${error.message}`, 'error');
+      } finally {
+        // Reset button state
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Upload Master List';
+      }
+    });
+    
+    // Refresh employee list
+    refreshButton.addEventListener('click', fetchEmployeeList);
+    
+    // Check if user is authenticated
+    async function checkAuthentication() {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          showMessage('You must be logged in as a driver to use this feature. Please log in first.', 'error');
+          uploadButton.disabled = true;
+          refreshButton.disabled = true;
+          return;
+        }
+        
+        const user = await response.json();
+        
+        if (user.userType !== 'driver') {
+          showMessage('Only drivers can manage the master list. Please log in as a driver.', 'error');
+          uploadButton.disabled = true;
+          refreshButton.disabled = true;
+        } else {
+          hideMessage();
+          uploadButton.disabled = false;
+          refreshButton.disabled = false;
+        }
+      } catch (error) {
+        console.error('Authentication error:', error);
+        showMessage('Failed to check authentication. Please refresh the page and try again.', 'error');
+      }
+    }
+    
+    // Fetch and display employee list
+    async function fetchEmployeeList() {
+      try {
+        employeeList.innerHTML = '<p>Loading employee list...</p>';
+        
+        const response = await fetch('/api/users?userType=rider', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch employee list');
+        }
+        
+        const users = await response.json();
+        const activeUsers = users.filter(user => user.onMasterList);
+        
+        if (activeUsers.length === 0) {
+          employeeList.innerHTML = '<p>No active employees found.</p>';
+          return;
+        }
+        
+        let html = `<p>Total active employees: ${activeUsers.length}</p>`;
+        html += '<table><thead><tr><th>Employee ID</th><th>Name</th><th>Status</th><th>Last Validated</th></tr></thead><tbody>';
+        
+        activeUsers.forEach(user => {
+          const lastValidated = user.lastValidated ? new Date(user.lastValidated).toLocaleString() : 'Never';
+          html += `
+            <tr>
+              <td>${user.riderId}</td>
+              <td>${user.name}</td>
+              <td>${user.onMasterList ? 'Active' : 'Inactive'}</td>
+              <td>${lastValidated}</td>
+            </tr>
+          `;
+        });
+        
+        html += '</tbody></table>';
+        employeeList.innerHTML = html;
+      } catch (error) {
+        console.error('Error fetching employee list:', error);
+        employeeList.innerHTML = '<p>Failed to load employee list. Please try again.</p>';
+      }
+    }
+    
+    // Helper function to read file as text
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsText(file);
+      });
+    }
+    
+    // Parse employee IDs from text
+    function parseEmployeeIds(text) {
+      return text
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length === 5);
+    }
+    
+    // Show message
+    function showMessage(text, type) {
+      messageElement.textContent = text;
+      messageElement.className = `message ${type}`;
+      messageElement.style.display = 'block';
+    }
+    
+    // Hide message
+    function hideMessage() {
+      messageElement.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
