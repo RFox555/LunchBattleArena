@@ -18,7 +18,7 @@ import fs from "fs";
 declare module 'express-session' {
   interface SessionData {
     userId?: number;
-    userType?: 'driver' | 'rider'; // 'rider' represents employees in the database
+    userType?: 'driver' | 'rider' | 'admin'; // 'rider' represents employees, 'admin' for administrators
     createdAt?: string; // Added for session timestamp tracking
   }
 }
@@ -99,6 +99,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.session.touch();
     
     // Continue to the next middleware/route handler
+    next();
+  };
+  
+  // Middleware to check if user is an admin
+  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    if (req.session.userType !== "admin") {
+      return res.status(403).json({ message: "Access denied. Only administrators can access this resource." });
+    }
+    
     next();
   };
 
@@ -258,12 +271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update master list of active employees
-  app.post("/api/master-list", authenticateUser, async (req, res) => {
+  app.post("/api/master-list", requireAdmin, async (req, res) => {
     try {
-      // Only admins can update the master list
-      if (req.session.userType !== "admin") {
-        return res.status(403).json({ message: "Only administrators can update the master list" });
-      }
       
       // Validate the request body
       const result = masterListValidationSchema.safeParse(req.body);

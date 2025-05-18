@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master List Management</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 {
+      color: #e11d48;
+      margin-top: 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button {
+      background-color: #e11d48;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #be123c;
+    }
+    .message {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .error {
+      background-color: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+    }
+    .info {
+      background-color: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+    .auth-check {
+      text-align: center;
+      padding: 20px;
+    }
+    .results {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      display: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f8fafc;
+      font-weight: 600;
+    }
+    .status-active {
+      color: #16a34a;
+      font-weight: 500;
+    }
+    .status-inactive {
+      color: #dc2626;
+      font-weight: 500;
+    }
+    .nav-links {
+      margin-bottom: 20px;
+    }
+    .nav-links a {
+      margin-right: 15px;
+      color: #e11d48;
+      text-decoration: none;
+    }
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-links">
+      <a href="/admin-dashboard.html">Admin Dashboard</a>
+      <a href="/create-master-list.html">Manage Master List</a>
+      <a href="/admin-login.html">Logout</a>
+    </div>
+
+    <h1>Master List Management</h1>
+    <p>Use this tool to update the employee master list. Enter one employee ID per line (each ID should be 5 characters long).</p>
+    
+    <div id="auth-message" class="auth-check">
+      <p>Checking authentication...</p>
+    </div>
+    
+    <div id="content" style="display: none;">
+      <div class="form-group">
+        <label for="employeeIds">Employee IDs (one per line):</label>
+        <textarea id="employeeIds" placeholder="Enter employee IDs here, one per line"></textarea>
+      </div>
+      
+      <button id="uploadBtn">Update Master List</button>
+      
+      <div id="message" class="message" style="display: none;"></div>
+      
+      <div id="results" class="results">
+        <h2>Results:</h2>
+        <table>
+          <tr>
+            <th>Status</th>
+            <th>Count</th>
+          </tr>
+          <tr>
+            <td>Employees Added/Updated:</td>
+            <td id="updatedCount">0</td>
+          </tr>
+          <tr>
+            <td>Employees Deactivated:</td>
+            <td id="deactivatedCount">0</td>
+          </tr>
+        </table>
+      </div>
+      
+      <div class="form-group" style="margin-top: 30px;">
+        <h2>Current Active Employee List</h2>
+        <button id="viewActiveBtn">View Active Employees</button>
+        <div id="activeList" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // DOM Elements
+    const authMessage = document.getElementById('auth-message');
+    const content = document.getElementById('content');
+    const employeeIds = document.getElementById('employeeIds');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const messageDiv = document.getElementById('message');
+    const resultsDiv = document.getElementById('results');
+    const updatedCount = document.getElementById('updatedCount');
+    const deactivatedCount = document.getElementById('deactivatedCount');
+    const viewActiveBtn = document.getElementById('viewActiveBtn');
+    const activeList = document.getElementById('activeList');
+    
+    // Check authentication on page load
+    checkAuthentication();
+    
+    // Check if user is authenticated and is an admin
+    async function checkAuthentication() {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          showAuthError('You are not logged in. Please <a href="/admin-login.html">login</a> to continue.');
+          return;
+        }
+        
+        const user = await response.json();
+        
+        if (user.userType !== 'admin') {
+          showAuthError('Access denied. Only administrators can access this page.');
+          return;
+        }
+        
+        // Auth successful, show content
+        authMessage.style.display = 'none';
+        content.style.display = 'block';
+      } catch (error) {
+        console.error('Authentication error:', error);
+        showAuthError('Authentication error. Please try again later.');
+      }
+    }
+    
+    // Show authentication error
+    function showAuthError(message) {
+      authMessage.innerHTML = `<div class="error">${message}</div>`;
+    }
+    
+    // Handle the upload of employee IDs
+    uploadBtn.addEventListener('click', async () => {
+      // Clear previous message and results
+      messageDiv.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      
+      const idList = employeeIds.value.trim();
+      
+      if (!idList) {
+        showMessage('Please enter at least one employee ID.', 'error');
+        return;
+      }
+      
+      // Parse IDs
+      const ids = idList.split(/\r?\n/)
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+      
+      // Validate IDs
+      const invalidIds = ids.filter(id => id.length !== 5);
+      if (invalidIds.length > 0) {
+        showMessage(`Invalid IDs found: ${invalidIds.join(', ')}. All IDs must be 5 characters long.`, 'error');
+        return;
+      }
+      
+      try {
+        // Disable button while processing
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Updating...';
+        
+        // Send to API
+        const response = await fetch('/api/master-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ employeeIds: ids }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update master list');
+        }
+        
+        const result = await response.json();
+        
+        // Show success message
+        showMessage(`Master list updated successfully!`, 'success');
+        
+        // Show results
+        updatedCount.textContent = result.updated;
+        deactivatedCount.textContent = result.deactivated;
+        resultsDiv.style.display = 'block';
+      } catch (error) {
+        console.error('Error updating master list:', error);
+        showMessage(`Error: ${error.message}`, 'error');
+      } finally {
+        // Re-enable button
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Update Master List';
+      }
+    });
+    
+    // View active employees
+    viewActiveBtn.addEventListener('click', async () => {
+      try {
+        viewActiveBtn.disabled = true;
+        viewActiveBtn.textContent = 'Loading...';
+        activeList.innerHTML = '<p>Loading active employees...</p>';
+        
+        const response = await fetch('/api/users?userType=rider', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch employee list');
+        }
+        
+        const employees = await response.json();
+        
+        // Filter active employees
+        const activeEmployees = employees.filter(emp => emp.onMasterList);
+        
+        if (activeEmployees.length === 0) {
+          activeList.innerHTML = '<p>No active employees found.</p>';
+          return;
+        }
+        
+        // Display active employees
+        let html = `<p>Total active employees: ${activeEmployees.length}</p>`;
+        html += '<table>';
+        html += '<tr><th>Employee ID</th><th>Name</th><th>Status</th><th>Last Validated</th></tr>';
+        
+        activeEmployees.forEach(emp => {
+          const lastValidated = emp.lastValidated 
+            ? new Date(emp.lastValidated).toLocaleString() 
+            : 'Never';
+            
+          html += `
+            <tr>
+              <td>${emp.riderId}</td>
+              <td>${emp.name}</td>
+              <td class="status-active">Active</td>
+              <td>${lastValidated}</td>
+            </tr>
+          `;
+        });
+        
+        html += '</table>';
+        activeList.innerHTML = html;
+      } catch (error) {
+        console.error('Error fetching employee list:', error);
+        activeList.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      } finally {
+        viewActiveBtn.disabled = false;
+        viewActiveBtn.textContent = 'View Active Employees';
+      }
+    });
+    
+    // Show message
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
