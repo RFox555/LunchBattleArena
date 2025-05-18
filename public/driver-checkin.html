@@ -901,8 +901,41 @@
         // Initialize QR scanner
         initQrScanner();
         
-        // Check driver status
-        await checkDriverStatus();
+        // Check driver status with direct ID
+        console.log("Starting driver status check with ID:", currentUser.id);
+        const driverId = currentUser.id;
+        
+        try {
+          // Fetch status from API
+          statusPanel.classList.add('loading');
+          statusLoading.style.display = 'block';
+          
+          const response = await fetch(`/api/drivers/${driverId}/status`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to get driver status');
+          }
+          
+          // Parse the status
+          const status = await response.json();
+          console.log("Driver status received:", status);
+          
+          // Update status variables
+          driverIsCheckedIn = status.isCheckedIn;
+          driverLastCheckInTime = status.lastCheckInTime;
+          driverLastCheckOutTime = status.lastCheckOutTime;
+          
+          // Update UI
+          updateDriverStatusUI();
+        } catch (error) {
+          console.error('Error checking driver status:', error);
+          errorMessage.textContent = 'Failed to check driver status. Please try again.';
+          errorMessage.style.display = 'block';
+        } finally {
+          // Hide loading indicator
+          statusPanel.classList.remove('loading');
+          statusLoading.style.display = 'none';
+        }
         
         // Fetch recent check-ins
         fetchRecentCheckIns();
