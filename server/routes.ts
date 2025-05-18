@@ -128,13 +128,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Special handling for admin login
       if (data.userType === 'admin') {
-        if (!user || user.password !== data.password || !user.is_admin) {
+        // Database columns use snake_case, JS properties use camelCase
+        if (!user || user.password !== data.password || user.isAdmin !== true) {
           console.log("Admin login failed - invalid credentials or not an admin");
           return res.status(401).json({ message: "Invalid credentials" });
         }
+        // Set user type to admin for the session
+        user.userType = 'admin';
       } else {
         // Regular user login check
-        if (!user || user.password !== data.password || user.user_type !== data.userType) {
+        if (!user || user.password !== data.password || user.userType !== data.userType) {
           console.log("Login failed - invalid credentials");
           return res.status(401).json({ message: "Invalid credentials" });
         }
