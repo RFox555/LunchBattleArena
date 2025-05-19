@@ -596,6 +596,61 @@
       console.log(`QR Code scanning failure: ${error}`);
     }
     
+    // Enable QR scanner
+    function enableQrScanner() {
+      const scannerAvailability = document.getElementById('scanner-availability');
+      if (scannerAvailability) {
+        scannerAvailability.textContent = 'QR scanner is now active. You can now scan employee IDs.';
+        scannerAvailability.className = 'scanner-active';
+      }
+      
+      // Make sure the scanner tab is enabled
+      const scanTab = document.getElementById('scan-tab');
+      if (scanTab) {
+        scanTab.classList.remove('disabled');
+      }
+      
+      // Enable the start scan button
+      startScanButton.disabled = false;
+      startScanButton.title = "Start scanning QR codes";
+      
+      console.log("QR scanner enabled - driver is checked in");
+    }
+    
+    // Disable QR scanner
+    function disableQrScanner() {
+      // Stop the scanner if it's running
+      if (isScanning) {
+        stopScanner();
+      }
+      
+      const scannerAvailability = document.getElementById('scanner-availability');
+      if (scannerAvailability) {
+        scannerAvailability.textContent = 'QR scanner is inactive. Please check in to activate the scanner.';
+        scannerAvailability.className = 'scanner-inactive';
+      }
+      
+      // Disable the scanner tab
+      const scanTab = document.getElementById('scan-tab');
+      if (scanTab) {
+        scanTab.classList.add('disabled');
+        
+        // If scanner tab is active, switch to manual tab
+        if (scanTab.classList.contains('active')) {
+          const manualTab = document.getElementById('manual-tab');
+          if (manualTab) {
+            manualTab.click();
+          }
+        }
+      }
+      
+      // Disable the start scan button
+      startScanButton.disabled = true;
+      startScanButton.title = "You must check in before scanning";
+      
+      console.log("QR scanner disabled - driver is not checked in");
+    }
+    
     // Check in an employee
     async function checkInEmployee(riderId, location = 'Bus Stop', note = '') {
       // Hide previous messages
@@ -769,6 +824,25 @@
         // Show scanning panel
         scanningPanel.style.display = 'block';
         
+        // Enable QR scanning
+        const scannerAvailability = document.getElementById('scanner-availability');
+        if (scannerAvailability) {
+          scannerAvailability.textContent = 'QR scanner is now active. You can now scan employee IDs.';
+          scannerAvailability.className = 'scanner-active';
+        }
+        
+        // Enable the scanner tab
+        const scanTab = document.getElementById('scan-tab');
+        if (scanTab) {
+          scanTab.classList.remove('disabled');
+        }
+        
+        // Enable the start scan button
+        if (startScanButton) {
+          startScanButton.disabled = false;
+          startScanButton.title = "Start scanning QR codes";
+        }
+        
         // Update check-in time display
         if (driverStatus.lastCheckInTime) {
           checkInTimeDisplay.textContent = formatDateTime(driverStatus.lastCheckInTime);
@@ -785,7 +859,34 @@
         
         // Hide scanning panel
         scanningPanel.style.display = 'none';
+        
+        // Disable QR scanning
+        const scannerAvailability = document.getElementById('scanner-availability');
+        if (scannerAvailability) {
+          scannerAvailability.textContent = 'QR scanner is inactive. Please check in to activate the scanner.';
+          scannerAvailability.className = 'scanner-inactive';
+        }
+        
+        // If scanner is running, stop it
+        if (typeof html5QrCode !== 'undefined' && isScanning) {
+          stopScanner();
+        }
+        
+        // Disable the scanner tab
+        const scanTab = document.getElementById('scan-tab');
+        if (scanTab) {
+          scanTab.classList.add('disabled');
+        }
+        
+        // Disable the start scan button
+        if (startScanButton) {
+          startScanButton.disabled = true;
+          startScanButton.title = "You must check in first";
+        }
       }
+      
+      // Update global state for other scripts
+      window.driverStatus = driverStatus;
     }
     
     // Driver check-in - this function now calls the global function from driver-checkin.js
