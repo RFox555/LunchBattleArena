@@ -6,6 +6,21 @@ import { ZodError } from "zod";
 import { db } from "./db";
 
 export function registerMasterListRoutes(app: Express) {
+  // API route to get all master list entries
+  app.get('/api/master-list', async (req, res) => {
+    try {
+      // Get active parameter (default to true)
+      const activeOnly = req.query.active !== 'false';
+      
+      const masterListItems = await storage.getMasterList(activeOnly);
+      
+      return res.status(200).json(masterListItems);
+    } catch (error) {
+      console.error('Error getting master list:', error);
+      return res.status(500).json({ message: 'Failed to retrieve master list' });
+    }
+  });
+
   // API route to check if a rider ID is on the master list
   app.get('/api/master-list/check/:riderId', async (req, res) => {
     try {

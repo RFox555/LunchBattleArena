@@ -988,6 +988,166 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
+  
+  // MASTER LIST OPERATIONS
+  
+  // Get all entries from the master list
+  async getMasterList(activeOnly: boolean = true): Promise<MasterListItem[]> {
+    try {
+      let query = db.select().from(masterList);
+      
+      // Filter by active status if requested
+      if (activeOnly) {
+        query = query.where(eq(masterList.isActive, true));
+      }
+      
+      // Sort by employee ID
+      return await query.orderBy(masterList.employeeId);
+    } catch (error) {
+      console.error("Error getting master list:", error);
+      return [];
+    }
+  }
+  
+  // Get a specific master list item by employee ID
+  async getMasterListItem(employeeId: string): Promise<MasterListItem | undefined> {
+    try {
+      const [item] = await db
+        .select()
+        .from(masterList)
+        .where(eq(masterList.employeeId, employeeId));
+      
+      return item;
+    } catch (error) {
+      console.error("Error getting master list item:", error);
+      return undefined;
+    }
+  }
+  
+  // Check if an employee ID is on the active master list
+  async isOnMasterList(employeeId: string): Promise<boolean> {
+    try {
+      const [item] = await db
+        .select()
+        .from(masterList)
+        .where(
+          and(
+            eq(masterList.employeeId, employeeId),
+            eq(masterList.isActive, true)
+          )
+        );
+      
+      return !!item;
+    } catch (error) {
+      console.error("Error checking master list:", error);
+      return false;
+    }
+  }
+  
+  // Add a single employee to the master list
+  async addToMasterList(employeeId: string, adminId?: number, notes?: string): Promise<MasterListItem> {
+    try {
+      // Check if already exists
+      const existing = await this.getMasterListItem(employeeId);
+      
+      if (existing) {
+        // Update existing entry
+        const [updated] = await db
+          .update(masterList)
+          .set({
+            isActive: true,
+            lastUpdated: new Date(),
+            notes: notes || existing.notes,
+            addedBy: adminId || existing.addedBy
+          })
+          .where(eq(masterList.employeeId, employeeId))
+          .returning();
+        
+        return updated;
+      } else {
+        // Create new entry
+        const [created] = await db
+          .insert(masterList)
+          .values({
+            employeeId,
+            isActive: true,
+            notes,
+            addedBy: adminId
+          })
+          .returning();
+        
+        return created;
+      }
+    } catch (error) {
+      console.error("Error adding to master list:", error);
+      throw error;
+    }
+  }
+  
+  // Update the entire master list with a new set of employee IDs
+  async updateMasterList(employeeIds: string[], adminId?: number): Promise<{ added: number, updated: number, deactivated: number }> {
+    try {
+      console.log(`Updating master list with ${employeeIds.length} employee IDs`);
+      
+      let added = 0;
+      let updated = 0;
+      
+      // Step 1: Add or update all IDs in the provided list
+      for (const employeeId of employeeIds) {
+        try {
+          const existing = await this.getMasterListItem(employeeId);
+          
+          if (!existing) {
+            // Add new entry
+            await db
+              .insert(masterList)
+              .values({
+                employeeId,
+                isActive: true,
+                addedBy: adminId
+              });
+            added++;
+          } else if (!existing.isActive) {
+            // Reactivate existing entry
+            await db
+              .update(masterList)
+              .set({
+                isActive: true,
+                lastUpdated: new Date(),
+                addedBy: adminId || existing.addedBy
+              })
+              .where(eq(masterList.employeeId, employeeId));
+            updated++;
+          }
+        } catch (error) {
+          console.error(`Error processing employee ID ${employeeId}:`, error);
+        }
+      }
+      
+      // Step 2: Deactivate all IDs not in the provided list
+      const deactivateResult = await db
+        .update(masterList)
+        .set({
+          isActive: false,
+          lastUpdated: new Date()
+        })
+        .where(
+          and(
+            not(inArray(masterList.employeeId, employeeIds)),
+            eq(masterList.isActive, true)
+          )
+        );
+      
+      const deactivated = deactivateResult.count || 0;
+      
+      console.log(`Master list update complete: ${added} added, ${updated} updated, ${deactivated} deactivated`);
+      
+      return { added, updated, deactivated };
+    } catch (error) {
+      console.error("Error updating master list:", error);
+      throw error;
+    }
+  }
 }
 
 // Create and export the storage instance
