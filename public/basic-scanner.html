@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic QR Scanner</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 {
+      color: #880E19;
+      text-align: center;
+      margin-top: 0;
+    }
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      height: 300px;
+      margin: 20px auto;
+    }
+    .buttons {
+      text-align: center;
+      margin: 20px 0;
+    }
+    button {
+      background-color: #880E19;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+    button.secondary {
+      background-color: #333;
+    }
+    .manual-entry {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      text-align: center;
+    }
+    input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 200px;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    #message {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: center;
+      display: none;
+    }
+    .success {
+      background-color: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .error {
+      background-color: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+    }
+    .trips {
+      margin-top: 20px;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f8f8f8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Basic QR Scanner</h1>
+    
+    <div id="reader"></div>
+    
+    <div class="buttons">
+      <button id="startButton">Start Scanner</button>
+      <button id="stopButton" class="secondary" style="display: none;">Stop Scanner</button>
+    </div>
+    
+    <div id="message"></div>
+    
+    <div class="manual-entry">
+      <h2>Manual Entry</h2>
+      <input type="text" id="employeeId" placeholder="Enter 5-digit Employee ID">
+      <button id="submitButton">Submit</button>
+    </div>
+    
+    <div class="trips">
+      <h2>Recent Check-ins</h2>
+      <div id="tripsList"></div>
+    </div>
+  </div>
+
+  <script src="/js/html5-qrcode.min.js"></script>
+  <script>
+    // Variables
+    let html5QrCode = null;
+    let scanning = false;
+    
+    // DOM elements
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const employeeId = document.getElementById('employeeId');
+    const submitButton = document.getElementById('submitButton');
+    const message = document.getElementById('message');
+    const tripsList = document.getElementById('tripsList');
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("Page loaded");
+      
+      // Create scanner instance
+      html5QrCode = new Html5Qrcode("reader");
+      console.log("Scanner initialized");
+      
+      // Add button listeners
+      startButton.addEventListener('click', startScanner);
+      stopButton.addEventListener('click', stopScanner);
+      
+      // Add manual entry listener
+      submitButton.addEventListener('click', function() {
+        const id = employeeId.value.trim();
+        if (id) {
+          processEmployeeId(id);
+          employeeId.value = '';
+        }
+      });
+      
+      // Handle Enter key in input field
+      employeeId.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          const id = employeeId.value.trim();
+          if (id) {
+            processEmployeeId(id);
+            employeeId.value = '';
+          }
+        }
+      });
+      
+      // Load recent check-ins
+      fetchRecentCheckIns();
+    });
+    
+    // Start QR scanner
+    function startScanner() {
+      // Clear any previous messages
+      message.style.display = 'none';
+      
+      // Configure scanner
+      const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      // Start scanning
+      html5QrCode.start(
+        { facingMode: "environment" }, // Use back camera
+        qrConfig,
+        onScanSuccess,
+        onScanError
+      ).then(() => {
+        // Success - update UI
+        scanning = true;
+        startButton.style.display = 'none';
+        stopButton.style.display = 'inline-block';
+        console.log("Scanner started");
+      }).catch(err => {
+        // Error - show message
+        console.error("Failed to start scanner:", err);
+        showMessage("Failed to start scanner. Please check camera permissions.", "error");
+      });
+    }
+    
+    // Stop QR scanner
+    function stopScanner() {
+      if (html5QrCode && scanning) {
+        html5QrCode.stop().then(() => {
+          scanning = false;
+          startButton.style.display = 'inline-block';
+          stopButton.style.display = 'none';
+          console.log("Scanner stopped");
+        }).catch(err => {
+          console.error("Error stopping scanner:", err);
+        });
+      }
+    }
+    
+    // Handle successful scan
+    function onScanSuccess(decodedText) {
+      console.log("Successful scan:", decodedText);
+      
+      // Play success sound
+      playBeep();
+      
+      // Stop scanner
+      stopScanner();
+      
+      // Process the scanned code
+      processEmployeeId(decodedText);
+    }
+    
+    // Handle scan errors
+    function onScanError(error) {
+      // Just log errors, don't show to user
+      console.log("QR scan error:", error);
+    }
+    
+    // Process employee ID
+    function processEmployeeId(employeeId) {
+      employeeId = employeeId.trim();
+      
+      // Validate ID format
+      if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+        showMessage("Invalid employee ID. Please enter a 5-digit ID.", "error");
+        return;
+      }
+      
+      console.log("Processing employee ID:", employeeId);
+      
+      // Prepare check-in data
+      const checkInData = {
+        riderId: employeeId,
+        location: "Bus Stop",
+        note: "Checked in via direct scanner"
+      };
+      
+      // Send to API
+      fetch('/api/trips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(checkInData),
+        credentials: 'include'
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.message || "Failed to check in employee");
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Check-in successful:", data);
+        showMessage(`Employee ${employeeId} checked in successfully!`, "success");
+        
+        // Refresh trip list
+        fetchRecentCheckIns();
+      })
+      .catch(error => {
+        console.error("Check-in error:", error);
+        showMessage(error.message || "Error checking in employee", "error");
+      });
+    }
+    
+    // Fetch recent check-ins
+    function fetchRecentCheckIns() {
+      fetch('/api/trips/recent?limit=5', {
+        credentials: 'include'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch recent check-ins");
+        }
+        return response.json();
+      })
+      .then(trips => {
+        renderTripsList(trips);
+      })
+      .catch(error => {
+        console.error("Error fetching trips:", error);
+        tripsList.innerHTML = "<p>Error loading recent check-ins</p>";
+      });
+    }
+    
+    // Render trips list
+    function renderTripsList(trips) {
+      if (!trips || trips.length === 0) {
+        tripsList.innerHTML = "<p>No recent check-ins found</p>";
+        return;
+      }
+      
+      // Create table
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Employee ID</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Add rows
+      trips.forEach(trip => {
+        html += `
+          <tr>
+            <td>${formatDateTime(new Date(trip.timestamp || trip.check_in_time))}</td>
+            <td>${trip.riderId}</td>
+            <td>${trip.location || "Not specified"}</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+          </tbody>
+        </table>
+      `;
+      
+      tripsList.innerHTML = html;
+    }
+    
+    // Show a message
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = type === "error" ? "error" : "success";
+      message.style.display = "block";
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        message.style.display = "none";
+      }, 5000);
+    }
+    
+    // Play a beep sound
+    function playBeep() {
+      try {
+        const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+        beep.play();
+      } catch (error) {
+        console.error("Error playing beep:", error);
+      }
+    }
+    
+    // Format date and time
+    function formatDateTime(date) {
+      return new Date(date).toLocaleString();
+    }
+  </script>
+</body>
+</html>
