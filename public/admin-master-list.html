@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master List Management</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #880E19;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        button {
+            background-color: #880E19;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #6b0a13;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .progress {
+            height: 20px;
+            margin-top: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            overflow: hidden;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #28a745;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #6c757d;
+        }
+        .note {
+            font-style: italic;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .preview-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .file-upload {
+            display: none;
+        }
+        .file-upload-label {
+            background-color: #f0f2f5;
+            border: 1px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .file-upload-label:hover {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Master List Management</h1>
+        
+        <div class="card">
+            <h2>Upload Master List</h2>
+            
+            <div class="instructions">
+                <p><strong>Instructions:</strong></p>
+                <ul>
+                    <li>Upload a text or CSV file containing one employee ID per line</li>
+                    <li>Each ID must be exactly 5 digits</li>
+                    <li>You can also paste employee IDs directly into the text area below</li>
+                    <li>Only IDs in this list will be considered valid - employees not on this list will trigger warnings</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h3>File Upload</h3>
+                <div class="form-group">
+                    <label for="file-upload" class="file-upload-label">
+                        <i class="fas fa-upload"></i> Click to select file or drag and drop
+                    </label>
+                    <input type="file" id="file-upload" class="file-upload" accept=".txt,.csv">
+                    <p class="note">Supported formats: TXT, CSV</p>
+                </div>
+                
+                <div id="file-info" style="display: none;">
+                    <p>Selected file: <span id="file-name"></span></p>
+                    <button id="process-file">Process File</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Manual Entry</h3>
+                <div class="form-group">
+                    <label for="employee-ids">Paste Employee IDs (one per line):</label>
+                    <textarea id="employee-ids" placeholder="12345&#10;67890&#10;13579"></textarea>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Preview</h3>
+                <div id="preview-container" class="preview-container">
+                    <table id="preview-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Employee ID</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-body">
+                            <tr>
+                                <td colspan="3">No data to preview</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p id="preview-count" class="note">0 valid IDs found</p>
+            </div>
+            
+            <div class="alert success" id="success-message"></div>
+            <div class="alert error" id="error-message"></div>
+            
+            <div class="progress" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            
+            <button id="upload-button">Upload Master List</button>
+        </div>
+        
+        <div class="card">
+            <h2>Current Master List</h2>
+            <p>This section shows the currently active master list in the system.</p>
+            
+            <button id="load-master-list">Load Current List</button>
+            
+            <div id="master-list-container" class="preview-container" style="display: none;">
+                <table id="master-list-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Employee ID</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="master-list-body"></tbody>
+                </table>
+            </div>
+            <p id="master-list-count" class="note">0 entries in master list</p>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileUpload = document.getElementById('file-upload');
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const processFileBtn = document.getElementById('process-file');
+            const employeeIdsTextarea = document.getElementById('employee-ids');
+            const previewBody = document.getElementById('preview-body');
+            const previewCount = document.getElementById('preview-count');
+            const uploadButton = document.getElementById('upload-button');
+            const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const loadMasterListBtn = document.getElementById('load-master-list');
+            const masterListContainer = document.getElementById('master-list-container');
+            const masterListBody = document.getElementById('master-list-body');
+            const masterListCount = document.getElementById('master-list-count');
+            
+            let employeeIds = [];
+            
+            // File upload handling
+            fileUpload.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    fileName.textContent = file.name;
+                    fileInfo.style.display = 'block';
+                }
+            });
+            
+            // Process file button click
+            processFileBtn.addEventListener('click', function() {
+                const file = fileUpload.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    employeeIdsTextarea.value = content;
+                    processEmployeeIds();
+                };
+                reader.readAsText(file);
+            });
+            
+            // Monitor textarea changes
+            employeeIdsTextarea.addEventListener('input', processEmployeeIds);
+            
+            // Process employee IDs from textarea
+            function processEmployeeIds() {
+                const text = employeeIdsTextarea.value.trim();
+                if (!text) {
+                    previewBody.innerHTML = '<tr><td colspan="3">No data to preview</td></tr>';
+                    previewCount.textContent = '0 valid IDs found';
+                    employeeIds = [];
+                    return;
+                }
+                
+                // Split by newlines and filter valid IDs
+                const allLines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+                const validIds = allLines.filter(line => /^\d{5}$/.test(line));
+                
+                // Update employee IDs array
+                employeeIds = [...new Set(validIds)]; // Remove duplicates
+                
+                // Update preview
+                updatePreview(allLines, validIds);
+            }
+            
+            // Update preview table
+            function updatePreview(allLines, validIds) {
+                previewBody.innerHTML = '';
+                
+                for (let i = 0; i < Math.min(allLines.length, 100); i++) {
+                    const line = allLines[i];
+                    const isValid = /^\d{5}$/.test(line);
+                    
+                    const row = document.createElement('tr');
+                    
+                    const numCell = document.createElement('td');
+                    numCell.textContent = i + 1;
+                    
+                    const idCell = document.createElement('td');
+                    idCell.textContent = line;
+                    
+                    const statusCell = document.createElement('td');
+                    if (isValid) {
+                        statusCell.textContent = 'Valid';
+                        statusCell.style.color = 'green';
+                    } else {
+                        statusCell.textContent = 'Invalid - must be 5 digits';
+                        statusCell.style.color = 'red';
+                    }
+                    
+                    row.appendChild(numCell);
+                    row.appendChild(idCell);
+                    row.appendChild(statusCell);
+                    
+                    previewBody.appendChild(row);
+                }
+                
+                // Show truncation message if needed
+                if (allLines.length > 100) {
+                    const truncateRow = document.createElement('tr');
+                    const truncateCell = document.createElement('td');
+                    truncateCell.setAttribute('colspan', '3');
+                    truncateCell.textContent = `... ${allLines.length - 100} more rows (only showing first 100)`;
+                    truncateCell.style.fontStyle = 'italic';
+                    truncateRow.appendChild(truncateCell);
+                    previewBody.appendChild(truncateRow);
+                }
+                
+                // Update count
+                previewCount.textContent = `${validIds.length} valid IDs found${validIds.length !== allLines.length ? ` (${allLines.length - validIds.length} invalid)` : ''}`;
+            }
+            
+            // Upload master list
+            uploadButton.addEventListener('click', function() {
+                if (employeeIds.length === 0) {
+                    showError('No valid employee IDs found. Please add some IDs first.');
+                    return;
+                }
+                
+                // Show progress
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '50%';
+                
+                // Clear previous messages
+                hideMessages();
+                
+                // Send to server
+                fetch('/api/master-list/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ employeeIds }),
+                    credentials: 'include'
+                })
+                .then(response => {
+                    progressBar.style.width = '75%';
+                    
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || 'Failed to upload master list');
+                        });
+                    }
+                    
+                    return response.json();
+                })
+                .then(data => {
+                    progressBar.style.width = '100%';
+                    
+                    showSuccess(`Master list updated successfully! 
+                        Added ${data.added} new IDs, 
+                        Updated ${data.updated} existing IDs, 
+                        Deactivated ${data.deactivated} IDs.`);
+                    
+                    // Reload master list if visible
+                    if (masterListContainer.style.display !== 'none') {
+                        loadCurrentMasterList();
+                    }
+                    
+                    // Hide progress after a delay
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }, 2000);
+                })
+                .catch(error => {
+                    progressBar.style.width = '100%';
+                    showError(error.message || 'Error uploading master list');
+                    
+                    // Hide progress after a delay
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }, 2000);
+                });
+            });
+            
+            // Load current master list
+            loadMasterListBtn.addEventListener('click', loadCurrentMasterList);
+            
+            function loadCurrentMasterList() {
+                masterListBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+                masterListContainer.style.display = 'block';
+                
+                fetch('/api/master-list?activeOnly=false', {
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load master list');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateMasterListTable(data);
+                })
+                .catch(error => {
+                    masterListBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
+                    masterListCount.textContent = 'Error loading master list';
+                });
+            }
+            
+            function updateMasterListTable(items) {
+                masterListBody.innerHTML = '';
+                
+                if (!items || items.length === 0) {
+                    masterListBody.innerHTML = '<tr><td colspan="4">No entries in master list</td></tr>';
+                    masterListCount.textContent = '0 entries in master list';
+                    return;
+                }
+                
+                // Count active items
+                const activeCount = items.filter(item => item.isActive).length;
+                
+                // Sort by ID
+                items.sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+                
+                // Show first 100 items
+                for (let i = 0; i < Math.min(items.length, 100); i++) {
+                    const item = items[i];
+                    
+                    const row = document.createElement('tr');
+                    
+                    const numCell = document.createElement('td');
+                    numCell.textContent = i + 1;
+                    
+                    const idCell = document.createElement('td');
+                    idCell.textContent = item.employeeId;
+                    
+                    const statusCell = document.createElement('td');
+                    statusCell.textContent = item.isActive ? 'Active' : 'Inactive';
+                    statusCell.style.color = item.isActive ? 'green' : 'red';
+                    
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = new Date(item.lastUpdated).toLocaleString();
+                    
+                    row.appendChild(numCell);
+                    row.appendChild(idCell);
+                    row.appendChild(statusCell);
+                    row.appendChild(dateCell);
+                    
+                    masterListBody.appendChild(row);
+                }
+                
+                // Show truncation message if needed
+                if (items.length > 100) {
+                    const truncateRow = document.createElement('tr');
+                    const truncateCell = document.createElement('td');
+                    truncateCell.setAttribute('colspan', '4');
+                    truncateCell.textContent = `... ${items.length - 100} more rows (only showing first 100)`;
+                    truncateCell.style.fontStyle = 'italic';
+                    truncateRow.appendChild(truncateCell);
+                    masterListBody.appendChild(truncateRow);
+                }
+                
+                // Update count
+                masterListCount.textContent = `${items.length} entries in master list (${activeCount} active, ${items.length - activeCount} inactive)`;
+            }
+            
+            // Show success message
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+            }
+            
+            // Show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+            
+            // Hide all messages
+            function hideMessages() {
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
