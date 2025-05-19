@@ -13,6 +13,7 @@ import { ZodError } from "zod";
 import { WebSocketServer, WebSocket } from "ws";
 import path from "path";
 import fs from "fs";
+import { registerMasterListRoutes } from "./master-list";
 
 // Extend the Express session with our custom properties
 declare module 'express-session' {
@@ -26,6 +27,9 @@ declare module 'express-session' {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up database first
   await storage.setupDatabase();
+  
+  // Register master list routes
+  registerMasterListRoutes(app);
   
   // Setup session with PostgreSQL store
   app.use(
