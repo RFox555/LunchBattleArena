@@ -583,41 +583,74 @@
           return;
         }
         
-        // Create check-in data
-        const checkInData = {
-          riderId: employeeId,
-          location: "Bus Stop",
-          note: "Checked in via QR scanner"
-        };
-        
-        // Send API request
-        fetch('/api/trips', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(checkInData),
+        // First check if this employee ID is on the master list
+        fetch(`/api/master-list/check/${employeeId}`, {
           credentials: 'include'
         })
         .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.message || "Failed to check in employee");
-            });
+          if (response.ok) {
+            return response.json();
+          } else {
+            console.error("Error checking master list - proceeding anyway");
+            return { isOnList: true }; // Default to true if check fails
           }
-          return response.json();
         })
-        .then(data => {
-          console.log("Check-in successful:", data);
+        .then(masterListData => {
+          // Create check-in data
+          const checkInData = {
+            riderId: employeeId,
+            location: "Bus Stop",
+            note: "Checked in via QR scanner"
+          };
           
-          // Show success message
+          // Display warning if not on master list
+          const masterListWarning = !masterListData.isOnList;
+          
+          // Send API request to check in employee
+          return fetch('/api/trips', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(checkInData),
+            credentials: 'include'
+          })
+          .then(response => {
+            if (!response.ok) {
+              return response.json().then(data => {
+                throw new Error(data.message || "Failed to check in employee");
+              });
+            }
+            return response.json().then(data => {
+              // Return both the trip data and the master list status
+              return { 
+                tripData: data, 
+                masterListWarning 
+              };
+            });
+          });
+        })
+        .then(result => {
+          const { tripData, masterListWarning } = result;
+          console.log("Check-in successful:", tripData);
+          
+          // Show success message, with possible warning
           if (successMsg) {
-            successMsg.textContent = `Employee ${data.riderId} has been successfully checked in!`;
+            if (masterListWarning) {
+              successMsg.innerHTML = `
+                <div style="padding: 10px; margin-bottom: 10px; background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; border-radius: 4px;">
+                  <strong>WARNING:</strong> Employee ${tripData.riderId} is not on the master list!
+                </div>
+                <div>Employee ${tripData.riderId} has been checked in.</div>
+              `;
+            } else {
+              successMsg.textContent = `Employee ${tripData.riderId} has been successfully checked in!`;
+            }
             successMsg.style.display = 'block';
           }
           
           // Update trip details
-          updateTripDetails(data);
+          updateTripDetails(tripData);
           
           // If there's a function to refresh trips, call it
           if (typeof fetchRecentCheckIns === 'function') {
