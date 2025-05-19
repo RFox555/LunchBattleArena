@@ -513,17 +513,30 @@
     
     // Initialize QR Code scanner
     function initQrScanner() {
-      html5QrCode = new Html5Qrcode("reader");
-      
-      startScanButton.addEventListener('click', startScanner);
-      stopScanButton.addEventListener('click', stopScanner);
+      try {
+        // Make sure the reader element exists
+        if (document.getElementById("reader")) {
+          html5QrCode = new Html5Qrcode("reader");
+          
+          startScanButton.addEventListener('click', startScanner);
+          stopScanButton.addEventListener('click', stopScanner);
+          
+          console.log("QR scanner initialized successfully");
+        } else {
+          console.error("QR scanner container element not found");
+        }
+      } catch (error) {
+        console.error("Error initializing QR scanner:", error);
+      }
     }
     
     // Start scanner
     function startScanner() {
       // First, make sure the driver is checked in
-      // Using the global function from driver-checkin.js
-      if (!window.isDriverCheckedIn()) {
+      // Using the global variable directly since the function might not be loaded yet
+      const isDriverCheckedIn = window.isCheckedIn || (window.driverStatus && window.driverStatus.isCheckedIn) || false;
+      
+      if (!isDriverCheckedIn) {
         errorMessage.textContent = 'You must check in before you can scan employee QR codes.';
         errorMessage.style.display = 'block';
         return;
