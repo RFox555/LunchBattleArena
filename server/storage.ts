@@ -1,11 +1,12 @@
-import { eq, desc, sql, and, avg, inArray, notInArray } from "drizzle-orm";
+import { eq, desc, sql, and, avg, inArray, not } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, trips, busLocations, busRatings,
+  users, trips, busLocations, busRatings, masterList,
   type User, type InsertUser, 
   type Trip, type InsertTrip,
   type BusLocation, type InsertBusLocation, type UpdateBusLocation,
-  type BusRating, type InsertBusRating
+  type BusRating, type InsertBusRating,
+  type MasterListItem
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

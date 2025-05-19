@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Master List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+      border: 1px solid #d6e9c6;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+      border: 1px solid #ebccd1;
+    }
+    .info {
+      background-color: #d9edf7;
+      color: #31708f;
+      border: 1px solid #bce8f1;
+    }
+    #progress {
+      margin-top: 20px;
+      display: none;
+    }
+    .progress-bar {
+      width: 100%;
+      background-color: #f3f3f3;
+      border-radius: 4px;
+      padding: 3px;
+    }
+    .progress-bar-inner {
+      height: 20px;
+      background-color: #4CAF50;
+      border-radius: 4px;
+      width: 0%;
+      text-align: center;
+      line-height: 20px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload Employee Master List</h1>
+  <p>Paste your list of employee IDs below (one ID per line). Each ID should be exactly 5 digits.</p>
+  
+  <div class="form-group">
+    <label for="employeeIds">Employee IDs:</label>
+    <textarea id="employeeIds" placeholder="Enter one employee ID per line, e.g.:
+12345
+67890
+10101
+..."></textarea>
+  </div>
+  
+  <button id="upload">Upload Master List</button>
+  
+  <div id="progress">
+    <h3>Processing IDs...</h3>
+    <div class="progress-bar">
+      <div class="progress-bar-inner" id="progress-percent">0%</div>
+    </div>
+  </div>
+  
+  <div id="result"></div>
+  
+  <script>
+    document.getElementById('upload').addEventListener('click', async function() {
+      const textarea = document.getElementById('employeeIds');
+      const result = document.getElementById('result');
+      const progress = document.getElementById('progress');
+      const progressBar = document.getElementById('progress-percent');
+      
+      // Clear previous results
+      result.textContent = '';
+      result.className = '';
+      result.style.display = 'none';
+      
+      // Get and validate employee IDs
+      const text = textarea.value.trim();
+      if (!text) {
+        showError('Please enter at least one employee ID');
+        return;
+      }
+      
+      // Split by newline and filter out empty lines
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+      
+      // Validate format (5 digits)
+      const validIds = [];
+      const invalidIds = [];
+      
+      for (const line of lines) {
+        const id = line.trim();
+        if (/^\d{5}$/.test(id)) {
+          validIds.push(id);
+        } else {
+          invalidIds.push(id);
+        }
+      }
+      
+      // Show error if any invalid IDs
+      if (invalidIds.length > 0) {
+        showError(`Found ${invalidIds.length} invalid IDs. All IDs must be exactly 5 digits.`);
+        return;
+      }
+      
+      // Show error if no valid IDs
+      if (validIds.length === 0) {
+        showError('No valid employee IDs found. Each ID must be exactly 5 digits.');
+        return;
+      }
+      
+      // Show progress
+      progress.style.display = 'block';
+      
+      try {
+        // Send request to upload master list
+        const response = await fetch('/api/master-list/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ employeeIds: validIds })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showSuccess(`Successfully uploaded ${validIds.length} employee IDs to the master list!`);
+        } else {
+          showError(`Failed to upload master list: ${data.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        showError(`Error: ${error.message}`);
+      } finally {
+        progress.style.display = 'none';
+      }
+    });
+    
+    function showSuccess(message) {
+      const result = document.getElementById('result');
+      result.textContent = message;
+      result.className = 'success';
+      result.style.display = 'block';
+    }
+    
+    function showError(message) {
+      const result = document.getElementById('result');
+      result.textContent = message;
+      result.className = 'error';
+      result.style.display = 'block';
+    }
+    
+    function showInfo(message) {
+      const result = document.getElementById('result');
+      result.textContent = message;
+      result.className = 'info';
+      result.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
