@@ -189,9 +189,9 @@
             // Use replace instead of href to avoid redirect loops
             window.location.replace('/employee-dashboard.html');
           } else if (user.userType === 'driver') {
-            console.log('Redirecting to driver check-in...');
-            // Use replace instead of href to avoid redirect loops
-            window.location.replace('/driver-checkin.html');
+            console.log('Redirecting to driver login page...');
+            // Use a dedicated driver login page instead of direct redirect
+            window.location.replace('/driver-login.html');
           } else if (user.userType === 'admin') {
             console.log('Redirecting to admin dashboard...');
             window.location.replace('/admin-dashboard.html');

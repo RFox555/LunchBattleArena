@@ -1029,8 +1029,8 @@
       }
     });
     
-    // Initialize
-    checkAuth();
+    // Initialize - NO AUTHENTICATION CHECK HERE TO PREVENT REDIRECT LOOPS
+    // The page will be protected server-side and by the dedicated driver-login.html
     
     // Initialize location tracking elements here - driver-location.js will auto-initialize
     // but we need to make sure it's properly loaded and can find all the DOM elements

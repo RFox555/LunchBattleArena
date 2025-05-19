@@ -9,116 +9,215 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
       padding: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      background-color: #f0f2f5;
+      background-color: #f5f7fa;
       color: #333;
     }
-    .container {
-      width: 100%;
-      max-width: 800px;
-      padding: 30px;
-    }
-    .logo-container {
+    .hero {
+      background-color: #880E19;
+      color: white;
+      padding: 60px 20px;
       text-align: center;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
       margin-bottom: 20px;
     }
-    .company-logo {
-      width: 300px;
-      height: auto;
-      margin-bottom: 25px;
-      border-radius: 4px;
-      border: 3px solid #e22323;
-      padding: 8px;
-      background-color: white;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 700px;
+      margin: 0 auto 30px;
+      opacity: 0.9;
     }
-    h1 {
-      font-size: 36px;
-      color: #2563eb;
-      margin-bottom: 16px;
-    }
-    p {
-      font-size: 18px;
-      line-height: 1.6;
-      color: #4b5563;
-      margin-bottom: 40px;
-    }
-    .buttons {
+    .login-options {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin: 0 auto;
-      max-width: 400px;
-    }
-    .button {
-      display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       justify-content: center;
-      padding: 16px 24px;
-      font-size: 18px;
-      font-weight: bold;
-      text-decoration: none;
-      color: white;
-      background-color: #2563eb;
+      gap: 20px;
+      max-width: 1000px;
+      margin: -30px auto 0;
+      padding: 0 20px;
+    }
+    .login-card {
+      background: white;
       border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 300px;
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    .login-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     }
-    .button-secondary {
-      background-color: #4f46e5;
+    .login-card h2 {
+      color: #333;
+      margin-top: 0;
     }
-    .button-tertiary {
-      background-color: #0891b2;
+    .login-card p {
+      color: #666;
+      margin-bottom: 30px;
     }
-    .icon {
-      font-size: 24px;
-      margin-right: 12px;
+    .login-card .icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #880E19;
     }
-    footer {
-      margin-top: 60px;
-      color: #6b7280;
-      font-size: 14px;
+    .btn {
+      display: inline-block;
+      background-color: #880E19;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #6c0a14;
+    }
+    .content {
+      max-width: 1000px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+    .content h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+    }
+    .feature {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .feature-icon {
+      font-size: 36px;
+      color: #880E19;
+      margin-bottom: 15px;
+    }
+    .feature h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .feature p {
+      color: #666;
+      line-height: 1.6;
+    }
+    .footer {
+      background: #333;
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .footer p {
+      max-width: 700px;
+      margin: 0 auto;
+      opacity: 0.8;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo-container">
-      <img src="/images/kout-logo.jpg" alt="Kout Food Group Logo" class="company-logo">
-    </div>
+  <div class="hero">
     <h1>Transportation Tracking System</h1>
-    
-    <p>
-      Welcome to the Transportation Tracking System. This secure platform helps
-      manage transportation services and maintains accurate employee transit records.
-    </p>
-    
-    <div class="buttons">
-      <a href="/login.html" class="button">
-        <span class="icon">👤</span>
-        Login
-      </a>
-      
-      <a href="/register.html" class="button button-secondary">
-        <span class="icon">📝</span>
-        Register
-      </a>
+    <p>A comprehensive solution for tracking employee transportation, enhancing safety, 
+       and improving efficiency for Kout Food Group</p>
+  </div>
+  
+  <div class="login-options">
+    <div class="login-card">
+      <div class="icon">👨‍💼</div>
+      <h2>Employee Login</h2>
+      <p>Access your employee dashboard, view your trip history, and rate your transportation experience.</p>
+      <a href="/login.html?type=employee" class="btn">Employee Login</a>
     </div>
     
-    <!-- Quick access options removed as per requirement -->
+    <div class="login-card">
+      <div class="icon">🚌</div>
+      <h2>Driver Login</h2>
+      <p>Access your driver dashboard, check-in/out, and manage employee transportation.</p>
+      <a href="/driver-login.html" class="btn">Driver Login</a>
+    </div>
     
-    <footer>
-      <p>© 2025 Kout Food Group - Transportation Tracking System</p>
-    </footer>
+    <div class="login-card">
+      <div class="icon">👨‍💻</div>
+      <h2>Admin Login</h2>
+      <p>Access administration tools, manage master lists, and monitor system performance.</p>
+      <a href="/login.html?type=admin" class="btn">Admin Login</a>
+    </div>
   </div>
+  
+  <div class="content">
+    <h2>System Features</h2>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <h3>Secure Authentication</h3>
+        <p>Role-based access control ensures that employees, drivers, and administrators have appropriate 
+           permissions and security.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">📱</div>
+        <h3>QR Code Check-in</h3>
+        <p>Drivers can quickly scan employee QR codes to register trips and track transportation activity.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <h3>Reporting Dashboard</h3>
+        <p>Comprehensive reporting tools provide insights into transportation patterns and employee travel.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">🗺️</div>
+        <h3>Real-time Tracking</h3>
+        <p>Monitor bus locations in real-time to improve logistics and ensure timely transportation.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">⭐</div>
+        <h3>Quality Feedback</h3>
+        <p>Employees can rate their transportation experience, helping to maintain high-quality service.</p>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">📝</div>
+        <h3>Master List Management</h3>
+        <p>Administrative tools to manage active employee lists for transportation authorization.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>© 2025 Kout Food Group Transportation Tracking System. All rights reserved.</p>
+  </div>
+  
+  <script>
+    // Check for login parameter and redirect if necessary
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const loginType = urlParams.get('type');
+      
+      if (loginType === 'employee') {
+        // Pre-select Employee in the dropdown
+        setTimeout(() => {
+          window.location.href = '/login.html?preselect=rider';
+        }, 100);
+      } else if (loginType === 'admin') {
+        // Pre-select Admin in the dropdown
+        setTimeout(() => {
+          window.location.href = '/login.html?preselect=admin';
+        }, 100);
+      }
+    });
+  </script>
 </body>
 </html>
