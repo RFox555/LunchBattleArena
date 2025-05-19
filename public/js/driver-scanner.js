@@ -209,11 +209,33 @@ async function checkInEmployee(riderId) {
     return;
   }
   
+  let isOnMasterList = true;
+  
+  try {
+    // First check if this ID is on the master list
+    const masterListResponse = await fetch(`/api/master-list/check/${riderId}`);
+    
+    if (masterListResponse.ok) {
+      const masterListData = await masterListResponse.json();
+      isOnMasterList = masterListData.isOnList;
+      
+      // If not on master list, show warning
+      if (!isOnMasterList) {
+        showError(`WARNING: Employee ID ${riderId} is NOT on the approved master list! You can still check them in, but this may need review.`);
+        // Wait 2 seconds to make sure the warning is seen
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  } catch (error) {
+    console.error("Error checking master list:", error);
+    // Continue with check-in even if master list check fails
+  }
+  
   // Prepare check-in data
   const checkInData = {
     riderId,
     location: 'Bus Stop',
-    note: 'Checked in by driver'
+    note: isOnMasterList ? 'Checked in by driver' : 'Checked in by driver - NOT ON MASTER LIST'
   };
   
   try {
@@ -232,8 +254,12 @@ async function checkInEmployee(riderId) {
       const trip = await response.json();
       console.log('Check-in successful:', trip);
       
-      // Show success message
-      showSuccess(`Employee ${trip.riderId} has been successfully checked in!`);
+      // Show appropriate success message
+      if (!isOnMasterList) {
+        showSuccess(`Employee ${trip.riderId} checked in, but they are NOT on the approved master list.`);
+      } else {
+        showSuccess(`Employee ${trip.riderId} has been successfully checked in!`);
+      }
       
       // Update trip details
       tripId.textContent = trip.id;
