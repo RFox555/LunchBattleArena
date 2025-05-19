@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kout Food - Driver Check-In Portal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/kout-styles.css">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: var(--kout-dark);
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-heading {
+      display: flex;
+      align-items: center;
+    }
+    .logo {
+      height: 50px;
+      margin-right: 15px;
+    }
+    h1 {
+      margin: 0;
+      color: var(--kout-dark);
+      font-size: 24px;
+    }
+    nav {
+      background-color: var(--kout-red);
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    nav ul {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    nav li {
+      margin-right: 25px;
+    }
+    nav a {
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+      padding: 8px 0;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    nav a:hover, nav a.active {
+      border-bottom-color: white;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+    .card-header {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      margin: 0;
+      color: var(--kout-dark);
+      font-size: 20px;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      margin-right: 15px;
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      border-bottom-color: var(--kout-red);
+      color: var(--kout-red);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--kout-dark);
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--kout-red);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(227, 36, 33, 0.2);
+    }
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
+    button {
+      background-color: var(--kout-red);
+      color: white;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #c61e1a;
+    }
+    button.secondary {
+      background-color: var(--kout-gray);
+    }
+    button.secondary:hover {
+      background-color: #5a6268;
+    }
+    .success {
+      background-color: #d4edda;
+      border-left: 4px solid #28a745;
+      color: #155724;
+      padding: 15px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error {
+      background-color: #f8d7da;
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .warning {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 20px;
+    }
+    .info {
+      background-color: #d1ecf1;
+      border-left: 4px solid #17a2b8;
+      color: #0c5460;
+      padding: 15px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background-color: #f9fafb;
+      font-weight: 600;
+      color: var(--kout-dark);
+    }
+    tr:hover {
+      background-color: #f9fafb;
+    }
+    .scanner-container {
+      margin-bottom: 25px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 15px;
+      background-color: #f9fafb;
+    }
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 6px;
+    }
+    .hidden {
+      display: none;
+    }
+    .status-section {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 12px 15px;
+      background-color: #f9fafb;
+      border-radius: 6px;
+    }
+    .status-indicator {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    .status-active {
+      background-color: #28a745;
+    }
+    .status-inactive {
+      background-color: #dc3545;
+    }
+    .status-text {
+      font-weight: 500;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+    }
+    .user-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background-color: var(--kout-red);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 12px;
+      font-size: 18px;
+    }
+    .user-details h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .user-details p {
+      margin: 3px 0 0;
+      color: var(--kout-gray);
+      font-size: 14px;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+    #trip-details {
+      margin-top: 20px;
+      padding: 18px;
+      background-color: #f9fafb;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      display: none;
+    }
+    #trip-details h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: var(--kout-dark);
+    }
+    #trip-details p {
+      margin: 8px 0;
+    }
+    .trip-detail-label {
+      font-weight: 600;
+      display: inline-block;
+      width: 130px;
+      color: var(--kout-dark);
+    }
+    .spacer {
+      height: 25px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+      }
+      .logo-heading {
+        margin-bottom: 15px;
+      }
+      nav ul {
+        flex-wrap: wrap;
+      }
+      nav li {
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+  <script src="js/ensure-extension.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-heading">
+        <img src="/images/kout-logo.svg" alt="Kout Food Group" class="logo">
+        <h1>Driver Check-In Portal</h1>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="user-details">
+          <h3 id="driver-name">Loading...</h3>
+          <p>Driver</p>
+        </div>
+      </div>
+    </header>
+    
+    <nav>
+      <ul>
+        <li><a href="#" class="active">Check-In</a></li>
+        <li><a href="driver-dashboard.html">Dashboard</a></li>
+        <li><a href="driver-reports.html">Trip Reports</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+    
+    <div class="status-section">
+      <div id="status-indicator" class="status-indicator status-inactive"></div>
+      <span id="status-text" class="status-text">Status: Not Checked In</span>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Employee Scanner</h2>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" data-tab="scanner">Scanner</div>
+        <div class="tab" data-tab="manual">Manual Entry</div>
+        <div class="tab" data-tab="trips">Recent Check-Ins</div>
+      </div>
+      
+      <div id="success-message" class="success"></div>
+      <div id="error-message" class="error"></div>
+      
+      <div class="tab-content active" data-tab="scanner">
+        <div class="scanner-container">
+          <div id="reader"></div>
+        </div>
+        <div class="button-group">
+          <button id="startButton">Start Scanner</button>
+          <button id="stopButton" class="secondary" style="display: none;">Stop Scanner</button>
+        </div>
+      </div>
+      
+      <div class="tab-content" data-tab="manual">
+        <div class="form-group">
+          <label for="manualInput">Employee ID:</label>
+          <input type="text" id="manualInput" placeholder="Enter 5-digit employee ID" maxlength="5" pattern="\d{5}">
+        </div>
+        <button id="submitButton">Check In Employee</button>
+      </div>
+      
+      <div class="tab-content" data-tab="trips">
+        <div class="button-group" style="justify-content: flex-end; margin-bottom: 15px;">
+          <button id="refresh-trips" class="secondary">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+        </div>
+        <div id="trips-container">
+          <p>Loading recent check-ins...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="trip-details">
+      <h3>Last Check-In Details</h3>
+      <p><span class="trip-detail-label">Trip ID:</span> <span id="trip-id"></span></p>
+      <p><span class="trip-detail-label">Employee ID:</span> <span id="trip-employee"></span></p>
+      <p><span class="trip-detail-label">Location:</span> <span id="trip-location"></span></p>
+      <p><span class="trip-detail-label">Time:</span> <span id="trip-time"></span></p>
+      <p><span class="trip-detail-label">Note:</span> <span id="trip-note"></span></p>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Driver Status</h2>
+      </div>
+      
+      <div class="info">
+        <p><strong>Note:</strong> You must be checked in to scan employee IDs. When your shift is over, please check out.</p>
+      </div>
+      
+      <div id="check-in-form">
+        <div class="form-group">
+          <label for="locationInput">Current Location:</label>
+          <input type="text" id="locationInput" placeholder="Enter your current location">
+        </div>
+        <div class="form-group">
+          <label for="noteInput">Note (optional):</label>
+          <textarea id="noteInput" rows="3" placeholder="Add any notes about your shift"></textarea>
+        </div>
+        <div class="button-group">
+          <button id="checkInButton">Check In</button>
+        </div>
+      </div>
+      
+      <div id="check-out-form" style="display: none;">
+        <div class="form-group">
+          <label for="checkoutNoteInput">Check Out Note (optional):</label>
+          <textarea id="checkoutNoteInput" rows="3" placeholder="Add any notes for checking out"></textarea>
+        </div>
+        <div class="button-group">
+          <button id="checkOutButton">Check Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://unpkg.com/html5-qrcode@2.3.4/html5-qrcode.min.js"></script>
+  <script src="js/driver-scanner.js"></script>
+  <script>
+    // DOM Elements
+    const checkInButton = document.getElementById('checkInButton');
+    const checkOutButton = document.getElementById('checkOutButton');
+    const checkInForm = document.getElementById('check-in-form');
+    const checkOutForm = document.getElementById('check-out-form');
+    const locationInput = document.getElementById('locationInput');
+    const noteInput = document.getElementById('noteInput');
+    const checkoutNoteInput = document.getElementById('checkoutNoteInput');
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const logoutLink = document.getElementById('logout-link');
+    
+    // Driver status state
+    let driverStatus = {
+      isCheckedIn: false,
+      lastCheckInTime: null,
+      lastCheckOutTime: null
+    };
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set up tab switching
+      const tabs = document.querySelectorAll('.tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabId = this.getAttribute('data-tab');
+          
+          // Update active tab
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Show relevant content
+          const tabContents = document.querySelectorAll('.tab-content');
+          tabContents.forEach(content => {
+            content.classList.remove('active');
+          });
+          document.querySelector(`.tab-content[data-tab="${tabId}"]`).classList.add('active');
+        });
+      });
+      
+      // Check driver status
+      checkDriverStatus();
+      
+      // Set up check in/out buttons
+      checkInButton.addEventListener('click', handleCheckIn);
+      checkOutButton.addEventListener('click', handleCheckOut);
+      
+      // Set up logout
+      logoutLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        })
+        .then(response => {
+          if (response.ok) {
+            window.location.href = '/login.html';
+          }
+        })
+        .catch(error => {
+          console.error('Logout error:', error);
+        });
+      });
+    });
+    
+    // Check driver status and update UI
+    async function checkDriverStatus() {
+      try {
+        const response = await fetch('/api/driver/status', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const status = await response.json();
+          driverStatus = status;
+          
+          // Update UI based on status
+          updateDriverStatusUI();
+        } else {
+          console.error('Failed to fetch driver status');
+        }
+      } catch (error) {
+        console.error('Error checking driver status:', error);
+      }
+    }
+    
+    // Update driver status UI elements
+    function updateDriverStatusUI() {
+      if (driverStatus.isCheckedIn) {
+        statusIndicator.classList.remove('status-inactive');
+        statusIndicator.classList.add('status-active');
+        statusText.textContent = `Status: Checked In (since ${formatDateTime(driverStatus.lastCheckInTime)})`;
+        
+        checkInForm.style.display = 'none';
+        checkOutForm.style.display = 'block';
+      } else {
+        statusIndicator.classList.remove('status-active');
+        statusIndicator.classList.add('status-inactive');
+        
+        if (driverStatus.lastCheckOutTime) {
+          statusText.textContent = `Status: Checked Out (at ${formatDateTime(driverStatus.lastCheckOutTime)})`;
+        } else {
+          statusText.textContent = 'Status: Not Checked In';
+        }
+        
+        checkInForm.style.display = 'block';
+        checkOutForm.style.display = 'none';
+      }
+    }
+    
+    // Handle driver check in
+    async function handleCheckIn() {
+      const location = locationInput.value.trim();
+      if (!location) {
+        showError('Please enter your current location');
+        return;
+      }
+      
+      try {
+        const checkInData = {
+          location,
+          note: noteInput.value.trim()
+        };
+        
+        const response = await fetch('/api/driver/check-in', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(checkInData),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          driverStatus.isCheckedIn = true;
+          driverStatus.lastCheckInTime = new Date();
+          
+          showSuccess('You have successfully checked in!');
+          updateDriverStatusUI();
+          
+          // Clear inputs
+          locationInput.value = '';
+          noteInput.value = '';
+        } else {
+          const error = await response.json();
+          showError(error.message || 'Failed to check in');
+        }
+      } catch (error) {
+        console.error('Check in error:', error);
+        showError('An error occurred while checking in');
+      }
+    }
+    
+    // Handle driver check out
+    async function handleCheckOut() {
+      try {
+        const checkOutData = {
+          note: checkoutNoteInput.value.trim()
+        };
+        
+        const response = await fetch('/api/driver/check-out', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(checkOutData),
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          driverStatus.isCheckedIn = false;
+          driverStatus.lastCheckOutTime = new Date();
+          
+          showSuccess('You have successfully checked out!');
+          updateDriverStatusUI();
+          
+          // Clear inputs
+          checkoutNoteInput.value = '';
+        } else {
+          const error = await response.json();
+          showError(error.message || 'Failed to check out');
+        }
+      } catch (error) {
+        console.error('Check out error:', error);
+        showError('An error occurred while checking out');
+      }
+    }
+    
+    // Format date and time
+    function formatDateTime(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+    
+    // Show success message
+    function showSuccess(message) {
+      const successMessage = document.getElementById('success-message');
+      const errorMessage = document.getElementById('error-message');
+      
+      successMessage.textContent = message;
+      successMessage.style.display = 'block';
+      errorMessage.style.display = 'none';
+      
+      // Auto hide after 5 seconds
+      setTimeout(() => {
+        successMessage.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Show error message
+    function showError(message) {
+      const successMessage = document.getElementById('success-message');
+      const errorMessage = document.getElementById('error-message');
+      
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+      successMessage.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
