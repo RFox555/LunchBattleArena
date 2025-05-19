@@ -186,16 +186,18 @@
           // Don't verify session, just redirect immediately
           if (user.userType === 'rider') {
             console.log('Redirecting to employee dashboard...');
-            window.location.href = '/employee-dashboard.html';
+            // Use replace instead of href to avoid redirect loops
+            window.location.replace('/employee-dashboard.html');
           } else if (user.userType === 'driver') {
             console.log('Redirecting to driver check-in...');
-            window.location.href = '/driver-checkin.html';
+            // Use replace instead of href to avoid redirect loops
+            window.location.replace('/driver-checkin.html');
           } else if (user.userType === 'admin') {
             console.log('Redirecting to admin dashboard...');
-            window.location.href = '/admin-dashboard.html';
+            window.location.replace('/admin-dashboard.html');
           } else {
             console.log('Redirecting to home page...');
-            window.location.href = '/index.html';
+            window.location.replace('/index.html');
           }
         } else {
           // Login failed
