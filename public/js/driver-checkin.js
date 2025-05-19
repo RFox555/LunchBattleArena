@@ -22,6 +22,9 @@ function initDriverCheckin() {
   getCurrentUser()
     .then(user => {
       if (user && user.userType === 'driver') {
+        // Store known authenticated driver in sessionStorage to prevent redirect loops
+        sessionStorage.setItem('driverAuthenticated', 'true');
+        
         currentDriverId = user.id;
         document.getElementById('driver-name').textContent = user.name;
         
@@ -31,20 +34,27 @@ function initDriverCheckin() {
         // Set up event listeners
         setupEventListeners();
       } else {
-        showError('Error: Only drivers can access this page. Please log in as a driver.');
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          window.location.href = '/login.html';
-        }, 3000);
+        // Only redirect if we haven't just come from login
+        if (!sessionStorage.getItem('driverAuthenticated')) {
+          showError('Error: Only drivers can access this page. Please log in as a driver.');
+          // Redirect to login after 3 seconds
+          setTimeout(() => {
+            window.location.replace('/login.html');
+          }, 3000);
+        }
       }
     })
     .catch(error => {
       console.error('Error fetching current user:', error);
-      showError('Error: Could not authenticate. Please log in again.');
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        window.location.href = '/login.html';
-      }, 3000);
+      
+      // Only redirect if we haven't just come from login
+      if (!sessionStorage.getItem('driverAuthenticated')) {
+        showError('Error: Could not authenticate. Please log in again.');
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          window.location.replace('/login.html');
+        }, 3000);
+      }
     });
 }
 
