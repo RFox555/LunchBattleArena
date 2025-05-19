@@ -514,24 +514,39 @@
     // Initialize QR Code scanner
     function initQrScanner() {
       try {
-        // Make sure the reader element exists
-        if (document.getElementById("reader")) {
-          html5QrCode = new Html5Qrcode("reader");
-          
-          startScanButton.addEventListener('click', startScanner);
-          stopScanButton.addEventListener('click', stopScanner);
-          
-          console.log("QR scanner initialized successfully");
-        } else {
-          console.error("QR scanner container element not found");
+        // Only proceed if html5-qrcode.min.js is loaded
+        if (typeof Html5Qrcode !== 'function') {
+          console.error("QR Scanner library not loaded");
+          return;
         }
+        
+        // Check if scanner already exists
+        if (html5QrCode) {
+          console.log("QR Scanner already initialized");
+          return;
+        }
+        
+        // Create scanner object
+        html5QrCode = new Html5Qrcode("reader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] });
+        console.log("QR Scanner created successfully");
+        
+        // Add event listeners for scanner controls
+        startScanButton.addEventListener('click', startScanner);
+        stopScanButton.addEventListener('click', stopScanner);
+        
+        console.log("QR Scanner controls initialized");
       } catch (error) {
         console.error("Error initializing QR scanner:", error);
+        errorMessage.textContent = "Failed to initialize QR scanner: " + error.message;
+        errorMessage.style.display = 'block';
       }
     }
     
     // Start scanner
     function startScanner() {
+      // Hide any previous error messages
+      errorMessage.style.display = 'none';
+      
       // First, make sure the driver is checked in
       // Using the global variable directly since the function might not be loaded yet
       const isDriverCheckedIn = window.isCheckedIn || (window.driverStatus && window.driverStatus.isCheckedIn) || false;
@@ -542,22 +557,63 @@
         return;
       }
       
-      const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+      // Ensure we have a scanner object
+      if (!html5QrCode) {
+        try {
+          html5QrCode = new Html5Qrcode("reader");
+          console.log("Created new scanner instance");
+        } catch (err) {
+          console.error("Failed to create scanner instance:", err);
+          errorMessage.textContent = 'Failed to initialize scanner. Please try again or use manual check-in.';
+          errorMessage.style.display = 'block';
+          return;
+        }
+      }
       
+      // Configure scanner options
+      const qrConfig = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        disableFlip: false
+      };
+      
+      // Start scanner with explicit camera access
       html5QrCode.start(
-        { facingMode: "environment" },
+        { facingMode: "environment" },  // Use back camera
         qrConfig,
-        onScanSuccess,
-        onScanFailure
+        (decodedText) => {
+          // Success callback - play beep and process QR code
+          const successSound = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+          successSound.play();
+          
+          // Stop scanner and process the code
+          html5QrCode.stop().then(() => {
+            isScanning = false;
+            startScanButton.style.display = 'block';
+            stopScanButton.style.display = 'none';
+            
+            // Process the QR code (employee ID)
+            checkInEmployee(decodedText.trim());
+          });
+        },
+        (errorMessage) => {
+          // Error callback - just log it, don't display to user
+          console.log(`QR scanning: ${errorMessage}`);
+        }
       )
       .then(() => {
+        // Scanner started successfully
         isScanning = true;
         startScanButton.style.display = 'none';
         stopScanButton.style.display = 'block';
+        
+        console.log("Scanner started successfully");
       })
       .catch(err => {
+        // Handle scanner start failure
         console.error('Failed to start scanner:', err);
-        errorMessage.textContent = 'Failed to start scanner. Please check camera permissions.';
+        errorMessage.textContent = 'Failed to start scanner. Please ensure camera permissions are granted.';
         errorMessage.style.display = 'block';
       });
     }
@@ -577,24 +633,8 @@
       }
     }
     
-    // Handle successful scan
-    function onScanSuccess(riderId) {
-      // Play success sound
-      const successSound = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
-      successSound.play();
-      
-      // Stop scanner
-      stopScanner();
-      
-      // Process the QR code result
-      checkInEmployee(riderId.trim());
-    }
-    
-    // Handle scan errors
-    function onScanFailure(error) {
-      // We don't need to show every scan failure
-      console.log(`QR Code scanning failure: ${error}`);
-    }
+    // Note: onScanSuccess and onScanFailure are now handled directly in the startScanner function
+    // This makes the scanning process more reliable and ensures proper cleanup
     
     // Enable QR scanner
     function enableQrScanner() {
