@@ -79,7 +79,7 @@ export const insertTripSchema = createInsertSchema(trips).pick({
 export const loginSchema = z.object({
   username: z.string().min(3),
   password: z.string().min(6),
-  userType: z.enum(["driver", "rider"]),
+  userType: z.enum(["driver", "rider", "admin"]),
 });
 
 // Schema for check-in form
