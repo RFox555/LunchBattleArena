@@ -10,15 +10,23 @@
     return;
   }
   
+  // Check for special cases where we don't want to enforce .html extension
+  // This includes driver-checkin to prevent login loops
+  if (window.location.pathname === '/driver-checkin') {
+    console.log('Special case, not enforcing .html extension for:', window.location.pathname);
+    return;
+  }
+  
   // List of known HTML pages
   const htmlPages = [
     '/login',
     '/register',
-    '/driver-checkin',
     '/employee-dashboard',
     '/driver-ratings',
     '/bus-tracking',
-    '/rate-bus'
+    '/rate-bus',
+    '/admin-dashboard',
+    '/create-master-list'
   ];
   
   // If we're on a known HTML page without the .html extension, add it
