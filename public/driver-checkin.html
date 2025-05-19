@@ -516,11 +516,19 @@
       // Add event listeners to scanner buttons
       if (startScanButton) {
         startScanButton.addEventListener('click', function() {
-          // Make sure driver is checked in before allowing scanning
-          if (driverStatus && driverStatus.isCheckedIn) {
+          console.log("Start scan button clicked");
+          console.log("Driver status:", driverStatus);
+          
+          // Get status directly from the global variable that driver-checkin.js sets
+          const isDriverCheckedIn = window.isDriverCheckedIn ? window.isDriverCheckedIn() : false;
+          console.log("Driver checked in according to global function:", isDriverCheckedIn);
+          
+          if (isDriverCheckedIn) {
+            console.log("Starting QR scanner");
             startQrScanner();
           } else {
             // Show error message if not checked in
+            console.log("Driver not checked in, showing error");
             errorMessage.textContent = 'You must check in before scanning employee QR codes.';
             errorMessage.style.display = 'block';
           }
