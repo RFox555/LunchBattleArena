@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #reader { 
+            width: 100%; 
+            margin: 20px 0; 
+        }
+        button {
+            background: #880E19;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        input {
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Scanner</h1>
+    
+    <div id="reader"></div>
+    
+    <div>
+        <button id="startBtn">Start Scanner</button>
+        <button id="stopBtn" style="display:none">Stop Scanner</button>
+    </div>
+    
+    <h2>Manual Entry</h2>
+    <input type="text" id="employeeId" placeholder="Enter 5-digit Employee ID">
+    <button id="submitBtn">Submit</button>
+    
+    <div id="message"></div>
+    
+    <script src="/js/html5-qrcode.min.js"></script>
+    <script>
+        // Global variables
+        let html5QrCode;
+        let scanning = false;
+        
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const employeeIdInput = document.getElementById('employeeId');
+        const messageDiv = document.getElementById('message');
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Create scanner
+                html5QrCode = new Html5Qrcode("reader");
+                
+                // Add button event listeners
+                startBtn.addEventListener('click', startScanner);
+                stopBtn.addEventListener('click', stopScanner);
+                submitBtn.addEventListener('click', function() {
+                    const id = employeeIdInput.value.trim();
+                    if (id) {
+                        checkInEmployee(id);
+                        employeeIdInput.value = '';
+                    }
+                });
+                
+                console.log("QR Scanner initialized");
+            } catch (error) {
+                console.error("Error initializing scanner:", error);
+                showMessage("Failed to initialize scanner. Please reload the page.", "error");
+            }
+        });
+        
+        // Start the scanner
+        function startScanner() {
+            if (scanning) return;
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            )
+            .then(() => {
+                scanning = true;
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline';
+                messageDiv.style.display = 'none';
+                console.log("Scanner started");
+            })
+            .catch(error => {
+                console.error("Error starting scanner:", error);
+                showMessage("Failed to start scanner. Please check camera permissions.", "error");
+            });
+        }
+        
+        // Stop the scanner
+        function stopScanner() {
+            if (!scanning) return;
+            
+            html5QrCode.stop()
+            .then(() => {
+                scanning = false;
+                startBtn.style.display = 'inline';
+                stopBtn.style.display = 'none';
+                console.log("Scanner stopped");
+            })
+            .catch(error => {
+                console.error("Error stopping scanner:", error);
+                showMessage("Error stopping scanner", "error");
+            });
+        }
+        
+        // Handle successful scan
+        function onScanSuccess(decodedText) {
+            console.log("QR code scanned:", decodedText);
+            
+            // Play beep sound
+            const beep = new Audio('data:audio/mp3;base64,SUQzAwAAAAAAGlRTU0UAAAAOAAADTGF2ZjU3LjQxLjEwMAD/5wAAAAAAAAAAAAAAAP/uABLLLLLLLLLL+Vv//MsssssssssssssssssssssssssssMsssssssssssssssssssssss/+MYxAAMiebEWUUQAAAAA3Lfff//yKlNLUFNRTMuOTkuNaqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr/4xjEDQyARKAhxTAAAAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr/4xjEWQyAAfmFBLAAAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr/4xjEeAyAAdj8BKAAAQAAKAAA0JBgCf/6XjGMNDCMDBoaGkaSaHdffJPJIw4U/8ksYa9P85/w4H5YHw4HLHw4BGAJPgCC');
+            beep.play();
+            
+            // Stop scanner
+            stopScanner();
+            
+            // Process the employee ID
+            checkInEmployee(decodedText);
+        }
+        
+        // Handle scan error
+        function onScanError(error) {
+            // Just log errors, don't show to user
+            console.log("Scan error:", error);
+        }
+        
+        // Check in employee
+        function checkInEmployee(employeeId) {
+            // Validate employee ID
+            if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+                showMessage("Invalid employee ID. Please enter a 5-digit number.", "error");
+                return;
+            }
+            
+            // Create check-in data
+            const checkInData = {
+                riderId: employeeId,
+                location: "Bus Stop",
+                note: "Checked in via QR scanner"
+            };
+            
+            // Send API request
+            fetch('/api/trips', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(checkInData),
+                credentials: 'include'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || "Failed to check in employee");
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Check-in successful:", data);
+                showMessage(`Employee ${data.riderId} checked in successfully!`, "success");
+            })
+            .catch(error => {
+                console.error("Check-in error:", error);
+                showMessage(error.message || "Error checking in employee", "error");
+            });
+        }
+        
+        // Show message
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = type === "error" ? "error" : "success";
+            messageDiv.style.display = "block";
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.display = "none";
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
