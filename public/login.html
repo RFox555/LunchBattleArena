@@ -116,6 +116,7 @@
         <select id="userType" name="userType" required>
           <option value="rider">Employee</option>
           <option value="driver">Driver</option>
+          <option value="admin">Administrator</option>
         </select>
       </div>
       
@@ -189,6 +190,9 @@
           } else if (user.userType === 'driver') {
             console.log('Redirecting to driver check-in...');
             window.location.href = '/driver-checkin.html';
+          } else if (user.userType === 'admin') {
+            console.log('Redirecting to admin dashboard...');
+            window.location.href = '/admin-dashboard.html';
           } else {
             console.log('Redirecting to home page...');
             window.location.href = '/index.html';
