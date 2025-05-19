@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple QR Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #880E19;
+            text-align: center;
+        }
+        .scanner-container {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        #reader {
+            width: 100%;
+            margin: 0 auto;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #880E19;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+        }
+        .manual-entry {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple QR Scanner</h1>
+        
+        <div class="scanner-container">
+            <div id="reader"></div>
+        </div>
+        
+        <div class="buttons">
+            <button id="startButton">Start Scanner</button>
+            <button id="stopButton" style="display:none;">Stop Scanner</button>
+        </div>
+        
+        <div id="successStatus" class="status success hidden"></div>
+        <div id="errorStatus" class="status error hidden"></div>
+        
+        <div class="manual-entry">
+            <h2>Manual Entry</h2>
+            <input type="text" id="manualInput" placeholder="Enter 5-digit Employee ID">
+            <button id="submitButton">Submit</button>
+        </div>
+    </div>
+
+    <script src="/js/html5-qrcode.min.js"></script>
+    <script>
+        // Variables
+        let html5QrCode;
+        let isScanning = false;
+        
+        // Elements
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const manualInput = document.getElementById('manualInput');
+        const submitButton = document.getElementById('submitButton');
+        const successStatus = document.getElementById('successStatus');
+        const errorStatus = document.getElementById('errorStatus');
+        
+        // Initialize scanner when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Page loaded");
+            
+            // Create scanner instance
+            html5QrCode = new Html5Qrcode("reader");
+            
+            // Setup button listeners
+            startButton.addEventListener('click', startScanner);
+            stopButton.addEventListener('click', stopScanner);
+            
+            // Setup manual entry
+            submitButton.addEventListener('click', function() {
+                const id = manualInput.value.trim();
+                if (id) {
+                    processEmployeeId(id);
+                    manualInput.value = '';
+                }
+            });
+        });
+        
+        // Start the scanner
+        function startScanner() {
+            console.log("Starting scanner");
+            hideStatus();
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            )
+            .then(() => {
+                console.log("Scanner started");
+                isScanning = true;
+                startButton.style.display = 'none';
+                stopButton.style.display = 'block';
+            })
+            .catch(err => {
+                console.error("Start failed:", err);
+                showError("Failed to start scanner. Please check camera permissions.");
+            });
+        }
+        
+        // Stop the scanner
+        function stopScanner() {
+            console.log("Stopping scanner");
+            
+            if (isScanning) {
+                html5QrCode.stop()
+                .then(() => {
+                    console.log("Scanner stopped");
+                    isScanning = false;
+                    startButton.style.display = 'block';
+                    stopButton.style.display = 'none';
+                })
+                .catch(err => {
+                    console.error("Stop failed:", err);
+                });
+            }
+        }
+        
+        // Handle successful scan
+        function onScanSuccess(decodedText) {
+            console.log("QR Code detected:", decodedText);
+            
+            // Play success sound
+            playBeep();
+            
+            // Stop the scanner
+            stopScanner();
+            
+            // Process the employee ID
+            processEmployeeId(decodedText);
+        }
+        
+        // Handle scan errors
+        function onScanError(error) {
+            // We don't need to do anything here
+            // console.log("Scan error:", error);
+        }
+        
+        // Process employee ID
+        function processEmployeeId(employeeId) {
+            console.log("Processing ID:", employeeId);
+            
+            // Validate employee ID
+            if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+                showError("Invalid employee ID. Please enter a 5-digit ID.");
+                return;
+            }
+            
+            // Check-in data
+            const data = {
+                riderId: employeeId,
+                location: "Bus Stop",
+                note: "Checked in via Simple Scanner"
+            };
+            
+            // Send to API
+            fetch('/api/trips', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || "Failed to check in employee");
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Check-in success:", data);
+                showSuccess(`Employee ${data.riderId} checked in successfully!`);
+            })
+            .catch(error => {
+                console.error("Check-in error:", error);
+                showError(error.message || "Error checking in employee");
+            });
+        }
+        
+        // Show success message
+        function showSuccess(message) {
+            successStatus.textContent = message;
+            successStatus.classList.remove('hidden');
+            errorStatus.classList.add('hidden');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                successStatus.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorStatus.textContent = message;
+            errorStatus.classList.remove('hidden');
+            successStatus.classList.add('hidden');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                errorStatus.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Hide status messages
+        function hideStatus() {
+            successStatus.classList.add('hidden');
+            errorStatus.classList.add('hidden');
+        }
+        
+        // Play beep sound
+        function playBeep() {
+            try {
+                const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+                beep.play();
+            } catch (err) {
+                console.error("Error playing beep:", err);
+            }
+        }
+    </script>
+</body>
+</html>

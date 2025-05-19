@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #880E19;
+            margin-top: 0;
+        }
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #880E19;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button.secondary {
+            background-color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .hidden {
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f8f8;
+        }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #880E19;
+            color: white;
+            padding: 15px 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+        }
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-bar">
+        <div class="logo">Transportation Tracking System</div>
+        <div class="nav-links">
+            <a href="/driver-checkin.html" class="nav-link">Dashboard</a>
+            <a href="/driver-scanner-direct.html" class="nav-link">Scanner</a>
+            <a href="/logout" class="nav-link">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>QR Scanner</h1>
+            <p>Scan employee QR codes or enter employee IDs manually</p>
+            
+            <div id="successAlert" class="alert success hidden"></div>
+            <div id="errorAlert" class="alert error hidden"></div>
+            
+            <div id="qr-reader-area">
+                <div id="reader"></div>
+                <div class="button-group">
+                    <button id="startScanBtn">Start Scanner</button>
+                    <button id="stopScanBtn" class="secondary hidden">Stop Scanner</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Manual Entry</h2>
+                <div>
+                    <input type="text" id="employeeIdInput" placeholder="Enter 5-digit employee ID">
+                    <button id="manualSubmitBtn">Check In</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Recent Check-ins</h2>
+            <div id="recentCheckinsContainer">Loading...</div>
+        </div>
+    </div>
+    
+    <script src="/js/html5-qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Page elements
+            const startScanBtn = document.getElementById('startScanBtn');
+            const stopScanBtn = document.getElementById('stopScanBtn');
+            const employeeIdInput = document.getElementById('employeeIdInput');
+            const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+            const successAlert = document.getElementById('successAlert');
+            const errorAlert = document.getElementById('errorAlert');
+            const recentCheckinsContainer = document.getElementById('recentCheckinsContainer');
+            
+            // QR Scanner variables
+            let html5QrCode;
+            let isScanning = false;
+
+            try {
+                // Initialize the QR scanner
+                html5QrCode = new Html5Qrcode("reader");
+                console.log("QR scanner initialized");
+            } catch (error) {
+                console.error("Failed to initialize QR scanner:", error);
+                showError("Failed to initialize QR scanner. Please refresh the page.");
+            }
+            
+            // Load recent check-ins when page loads
+            fetchRecentCheckins();
+            
+            // Event listeners
+            startScanBtn.addEventListener('click', startScanner);
+            stopScanBtn.addEventListener('click', stopScanner);
+            manualSubmitBtn.addEventListener('click', function() {
+                const employeeId = employeeIdInput.value.trim();
+                if (employeeId) {
+                    processEmployeeId(employeeId);
+                    employeeIdInput.value = '';
+                } else {
+                    showError("Please enter an employee ID");
+                }
+            });
+            
+            // Start QR scanner
+            function startScanner() {
+                hideAlerts();
+                
+                const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+                    const minEdgePercentage = 0.7; // 70%
+                    const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                    const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+                    return {
+                        width: qrboxSize,
+                        height: qrboxSize
+                    };
+                };
+                
+                const config = { 
+                    fps: 10, 
+                    qrbox: qrboxFunction,
+                    aspectRatio: 1.0,
+                    formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+                };
+                
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    handleScanSuccess,
+                    handleScanFailure
+                )
+                .then(() => {
+                    console.log("Scanner started successfully");
+                    isScanning = true;
+                    startScanBtn.classList.add('hidden');
+                    stopScanBtn.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error("Error starting scanner:", error);
+                    showError("Failed to start scanner. Please ensure camera permissions are granted.");
+                });
+            }
+            
+            // Stop QR scanner
+            function stopScanner() {
+                if (isScanning) {
+                    html5QrCode.stop()
+                    .then(() => {
+                        console.log("Scanner stopped");
+                        isScanning = false;
+                        startScanBtn.classList.remove('hidden');
+                        stopScanBtn.classList.add('hidden');
+                    })
+                    .catch(error => {
+                        console.error("Error stopping scanner:", error);
+                    });
+                }
+            }
+            
+            // Handle successful scan
+            function handleScanSuccess(decodedText) {
+                console.log("Scan success:", decodedText);
+                
+                // Play success beep
+                playBeep();
+                
+                // Stop scanner
+                stopScanner();
+                
+                // Process the employee ID
+                processEmployeeId(decodedText);
+            }
+            
+            // Handle scan failure (do nothing)
+            function handleScanFailure(error) {
+                // Just logging, no UI updates needed for failures
+                console.log("Scan failure:", error);
+            }
+            
+            // Process employee ID (from scan or manual entry)
+            function processEmployeeId(employeeId) {
+                hideAlerts();
+                
+                // Validate employee ID format
+                if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+                    showError("Invalid employee ID. Please enter a 5-digit number.");
+                    return;
+                }
+                
+                console.log("Processing employee ID:", employeeId);
+                
+                // Prepare data for API
+                const checkInData = {
+                    riderId: employeeId,
+                    location: "Bus Stop",
+                    note: "Checked in via Direct Scanner"
+                };
+                
+                // Send check-in request
+                fetch('/api/trips', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(checkInData),
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || "Failed to check in employee");
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Check-in successful:", data);
+                    showSuccess(`Employee ${data.riderId} checked in successfully!`);
+                    fetchRecentCheckins(); // Refresh the list
+                })
+                .catch(error => {
+                    console.error("Check-in error:", error);
+                    showError(error.message || "Error checking in employee");
+                });
+            }
+            
+            // Show success message
+            function showSuccess(message) {
+                successAlert.textContent = message;
+                successAlert.classList.remove('hidden');
+                errorAlert.classList.add('hidden');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    successAlert.classList.add('hidden');
+                }, 5000);
+            }
+            
+            // Show error message
+            function showError(message) {
+                errorAlert.textContent = message;
+                errorAlert.classList.remove('hidden');
+                successAlert.classList.add('hidden');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    errorAlert.classList.add('hidden');
+                }, 5000);
+            }
+            
+            // Hide both alerts
+            function hideAlerts() {
+                successAlert.classList.add('hidden');
+                errorAlert.classList.add('hidden');
+            }
+            
+            // Fetch recent check-ins
+            function fetchRecentCheckins() {
+                recentCheckinsContainer.innerHTML = "Loading...";
+                
+                fetch('/api/trips/recent?limit=10', {
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch recent check-ins");
+                    }
+                    return response.json();
+                })
+                .then(trips => {
+                    displayRecentCheckins(trips);
+                })
+                .catch(error => {
+                    console.error("Error fetching check-ins:", error);
+                    recentCheckinsContainer.innerHTML = "Failed to load recent check-ins";
+                });
+            }
+            
+            // Display recent check-ins
+            function displayRecentCheckins(trips) {
+                if (!trips || trips.length === 0) {
+                    recentCheckinsContainer.innerHTML = "No recent check-ins found";
+                    return;
+                }
+                
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Employee ID</th>
+                                <th>Location</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                trips.forEach(trip => {
+                    const timestamp = trip.timestamp || trip.check_in_time;
+                    html += `
+                        <tr>
+                            <td>${formatDateTime(timestamp)}</td>
+                            <td>${trip.riderId}</td>
+                            <td>${trip.location || "N/A"}</td>
+                            <td>${trip.note || "N/A"}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                
+                recentCheckinsContainer.innerHTML = html;
+            }
+            
+            // Format date time for display
+            function formatDateTime(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString();
+            }
+            
+            // Play success beep sound
+            function playBeep() {
+                try {
+                    const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+                    beep.play();
+                } catch (error) {
+                    console.error("Error playing beep:", error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
