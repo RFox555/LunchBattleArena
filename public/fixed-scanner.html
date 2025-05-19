@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-top: 0;
+        }
+        #reader {
+            width: 100%;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4a76a8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background-color: #ccc;
+        }
+        .manual-entry {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        nav {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        nav a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #4a76a8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fixed Scanner</h1>
+        
+        <nav>
+            <a href="/driver-checkin.html">Driver Dashboard</a>
+            <a href="/fixed-scanner.html">Scanner</a>
+            <a href="/logout">Logout</a>
+        </nav>
+        
+        <div id="reader"></div>
+        
+        <div class="controls">
+            <button id="startButton">Start Scanner</button>
+            <button id="stopButton" style="display: none; background-color: #d9534f;">Stop Scanner</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="manual-entry">
+            <h3>Manual Entry</h3>
+            <input type="text" id="manualInput" placeholder="Enter 5-digit employee ID" maxlength="5">
+            <button id="submitButton" style="width: 100%;">Submit</button>
+        </div>
+    </div>
+
+    <script src="/js/html5-qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const manualInput = document.getElementById('manualInput');
+            const submitButton = document.getElementById('submitButton');
+            const statusDiv = document.getElementById('status');
+            
+            // Variables
+            let scanner = null;
+            let isScanning = false;
+            
+            try {
+                // Initialize scanner
+                scanner = new Html5Qrcode("reader");
+                console.log("Scanner initialized");
+            } catch (error) {
+                console.error("Failed to initialize scanner:", error);
+                showStatus("Error: Failed to initialize scanner", false);
+            }
+            
+            // Add event listeners
+            startButton.addEventListener('click', startScanner);
+            stopButton.addEventListener('click', stopScanner);
+            submitButton.addEventListener('click', function() {
+                const employeeId = manualInput.value.trim();
+                if (employeeId) {
+                    processEmployeeId(employeeId);
+                    manualInput.value = '';
+                } else {
+                    showStatus("Please enter an employee ID", false);
+                }
+            });
+            
+            // Start scanner
+            function startScanner() {
+                if (!scanner) {
+                    showStatus("Scanner not initialized", false);
+                    return;
+                }
+                
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                };
+                
+                scanner.start(
+                    { facingMode: "environment" },
+                    config,
+                    handleScanSuccess,
+                    handleScanError
+                )
+                .then(() => {
+                    console.log("Scanner started");
+                    isScanning = true;
+                    startButton.style.display = 'none';
+                    stopButton.style.display = 'inline-block';
+                    statusDiv.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error("Failed to start scanner:", error);
+                    showStatus("Failed to start scanner. Please check camera permissions.", false);
+                });
+            }
+            
+            // Stop scanner
+            function stopScanner() {
+                if (scanner && isScanning) {
+                    scanner.stop()
+                    .then(() => {
+                        console.log("Scanner stopped");
+                        isScanning = false;
+                        startButton.style.display = 'inline-block';
+                        stopButton.style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error("Failed to stop scanner:", error);
+                        showStatus("Failed to stop scanner", false);
+                    });
+                }
+            }
+            
+            // Handle successful scan
+            function handleScanSuccess(decodedText) {
+                console.log("QR code detected:", decodedText);
+                playBeep();
+                stopScanner();
+                processEmployeeId(decodedText);
+            }
+            
+            // Handle scan errors
+            function handleScanError(error) {
+                // Just log errors, don't show to user
+                console.log("Scan error:", error);
+            }
+            
+            // Process employee ID
+            function processEmployeeId(employeeId) {
+                // Validate employee ID
+                if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+                    showStatus("Invalid employee ID. Please enter a 5-digit number.", false);
+                    return;
+                }
+                
+                // Prepare check-in data
+                const checkInData = {
+                    riderId: employeeId,
+                    location: "Bus Stop",
+                    note: "Checked in via Fixed Scanner"
+                };
+                
+                // Send API request
+                fetch('/api/trips', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(checkInData),
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || "Failed to check in employee");
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Check-in successful:", data);
+                    showStatus(`Employee ${data.riderId} checked in successfully!`, true);
+                })
+                .catch(error => {
+                    console.error("Check-in error:", error);
+                    showStatus(error.message || "Error checking in employee", false);
+                });
+            }
+            
+            // Show status message
+            function showStatus(message, isSuccess) {
+                statusDiv.textContent = message;
+                statusDiv.className = isSuccess ? 'status success' : 'status error';
+                statusDiv.style.display = 'block';
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Play beep sound
+            function playBeep() {
+                try {
+                    const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+                    beep.play();
+                } catch (error) {
+                    console.error("Error playing beep:", error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
