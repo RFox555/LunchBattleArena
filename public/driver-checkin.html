@@ -708,13 +708,14 @@
       };
       
       try {
-        // Send API request
-        const response = await fetch('/api/direct-trips', {
+        // Send API request to the correct endpoint
+        const response = await fetch('/api/trips', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(checkInData)
+          body: JSON.stringify(checkInData),
+          credentials: 'include' // Include credentials for auth
         });
         
         if (response.ok) {
