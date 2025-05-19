@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Route Management - Kout Food Transportation</title>
+  <link rel="stylesheet" href="/css/kout-styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#880E19">
+  <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+  <script src="/js/ensure-extension.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .heading {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .logo {
+      font-size: 32px;
+    }
+    h1 {
+      margin: 0;
+      color: #880E19;
+      font-size: 26px;
+    }
+    .user-actions {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    .user-info {
+      text-align: right;
+      font-size: 14px;
+    }
+    .user-name {
+      font-weight: bold;
+      color: #880E19;
+    }
+    .button {
+      background-color: #880E19;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .button:hover {
+      background-color: #6c0814;
+    }
+    .button.outline {
+      background-color: transparent;
+      color: #880E19;
+      border: 1px solid #880E19;
+    }
+    .button.outline:hover {
+      background-color: rgba(136, 14, 25, 0.1);
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      color: #6b7280;
+      font-weight: 500;
+      position: relative;
+    }
+    .tab.active {
+      color: #880E19;
+    }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #880E19;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .section {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 18px;
+      color: #374151;
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .route-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .route-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .route-name {
+      font-weight: bold;
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 5px;
+      color: #880E19;
+    }
+    .route-details {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 10px;
+    }
+    .route-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .route-button {
+      background-color: transparent;
+      color: #6b7280;
+      border: 1px solid #d1d5db;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .route-button:hover {
+      background-color: #f9fafb;
+      color: #111827;
+    }
+    .route-button.primary {
+      background-color: #880E19;
+      color: white;
+      border: none;
+    }
+    .route-button.primary:hover {
+      background-color: #6c0814;
+      color: white;
+    }
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #374151;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .form-actions {
+      grid-column: span 2;
+      text-align: right;
+      margin-top: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      text-align: left;
+      padding: 12px 15px;
+      background-color: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      font-weight: 500;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status.active {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .status.inactive {
+      background-color: #f3f4f6;
+      color: #6b7280;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+      color: #d1d5db;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      margin-top: 5px;
+    }
+    .nav-link {
+      color: #6B7280;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: #880E19;
+    }
+    .map-container {
+      height: 400px;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .route-stop {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      background-color: #f9fafb;
+    }
+    .stop-handle {
+      margin-right: 10px;
+      cursor: grab;
+      color: #6b7280;
+    }
+    .stop-info {
+      flex-grow: 1;
+    }
+    .stop-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="heading">
+        <div class="logo">🚌</div>
+        <div>
+          <h1>Route Management</h1>
+          <div class="nav-links">
+            <a href="/admin-dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/routes.html" class="nav-link active">Route Management</a>
+            <a href="/upload-master-list.html" class="nav-link">Master List</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="user-actions">
+        <div class="user-info">
+          Logged in as:<br>
+          <span class="user-name" id="user-name">Administrator</span>
+        </div>
+        <button id="logout-button" class="button outline">Logout</button>
+      </div>
+    </header>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="routes">Routes</div>
+      <div class="tab" data-tab="assignments">Driver Assignments</div>
+      <div class="tab" data-tab="analytics">Route Analytics</div>
+    </div>
+    
+    <div id="routes-tab" class="tab-content active">
+      <div class="section">
+        <div class="section-title">Create New Route</div>
+        <form id="route-form">
+          <div class="form-group">
+            <label for="route-name">Route Name</label>
+            <input type="text" id="route-name" name="name" required placeholder="e.g., North Factory Line">
+          </div>
+          
+          <div class="form-group">
+            <label for="route-start">Start Location</label>
+            <input type="text" id="route-start" name="startLocation" required placeholder="e.g., Main Office">
+          </div>
+          
+          <div class="form-group">
+            <label for="route-end">End Location</label>
+            <input type="text" id="route-end" name="endLocation" required placeholder="e.g., Factory Campus">
+          </div>
+          
+          <div class="form-group">
+            <label for="route-duration">Estimated Duration (minutes)</label>
+            <input type="number" id="route-duration" name="estimatedDuration" required min="1" value="30">
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="route-description">Description</label>
+            <textarea id="route-description" name="description" placeholder="Route details, landmarks, important information..."></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="button">Save Route</button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Existing Routes</div>
+        <div id="routes-container">
+          <div class="empty-state">
+            <div class="empty-icon">📍</div>
+            <p>No routes have been created yet.</p>
+            <p>Create a new route using the form above.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="assignments-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">Assign Drivers to Routes</div>
+        <form id="assignment-form">
+          <div class="form-group">
+            <label for="route-select">Select Route</label>
+            <select id="route-select" name="routeId" required>
+              <option value="">-- Select a route --</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="driver-select">Select Driver</label>
+            <select id="driver-select" name="driverId" required>
+              <option value="">-- Select a driver --</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="assignment-date">Assignment Date</label>
+            <input type="date" id="assignment-date" name="assignmentDate" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="assignment-notes">Notes</label>
+            <textarea id="assignment-notes" name="notes" placeholder="Special instructions for the driver..."></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="button">Create Assignment</button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Current Assignments</div>
+        <div id="assignments-container">
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <p>No driver assignments have been created yet.</p>
+            <p>Assign drivers to routes using the form above.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="analytics-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">Route Usage Analytics</div>
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p>Analytics will be available once routes are in use.</p>
+          <p>Create routes and assign drivers to start collecting data.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Service worker registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
+  </script>
+  
+  <script>
+    // DOM Elements
+    const userNameElement = document.getElementById('user-name');
+    const logoutButton = document.getElementById('logout-button');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const routeForm = document.getElementById('route-form');
+    const routesContainer = document.getElementById('routes-container');
+    const assignmentForm = document.getElementById('assignment-form');
+    const routeSelect = document.getElementById('route-select');
+    const driverSelect = document.getElementById('driver-select');
+    const assignmentsContainer = document.getElementById('assignments-container');
+    
+    // In-memory storage for routes and assignments (until we implement backend)
+    let routes = JSON.parse(localStorage.getItem('routes') || '[]');
+    let assignments = JSON.parse(localStorage.getItem('assignments') || '[]');
+    
+    // Check authentication
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const user = await response.json();
+          
+          // Update UI with user info
+          userNameElement.textContent = user.name || user.username;
+          
+          // Only allow admin access
+          if (user.userType !== 'admin') {
+            window.location.href = '/login.html';
+          }
+        } else {
+          // Not authenticated, redirect to login
+          window.location.href = '/login.html';
+        }
+      } catch (error) {
+        console.error('Authentication error:', error);
+        window.location.href = '/login.html';
+      }
+    }
+    
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Show corresponding content
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+          if (content.id === `${tabName}-tab`) {
+            content.classList.add('active');
+          }
+        });
+      });
+    });
+    
+    // Handle route form submission
+    routeForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(routeForm);
+      const routeData = {
+        id: Date.now(), // Temporary ID until backend implementation
+        name: formData.get('name'),
+        startLocation: formData.get('startLocation'),
+        endLocation: formData.get('endLocation'),
+        estimatedDuration: parseInt(formData.get('estimatedDuration')),
+        description: formData.get('description'),
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add to routes array
+      routes.push(routeData);
+      localStorage.setItem('routes', JSON.stringify(routes));
+      
+      // Update UI
+      renderRoutes();
+      updateRouteSelect();
+      
+      // Reset form
+      routeForm.reset();
+    });
+    
+    // Handle assignment form submission
+    assignmentForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(assignmentForm);
+      const assignmentData = {
+        id: Date.now(), // Temporary ID until backend implementation
+        routeId: parseInt(formData.get('routeId')),
+        driverId: parseInt(formData.get('driverId')),
+        assignmentDate: formData.get('assignmentDate'),
+        notes: formData.get('notes'),
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add to assignments array
+      assignments.push(assignmentData);
+      localStorage.setItem('assignments', JSON.stringify(assignments));
+      
+      // Update UI
+      renderAssignments();
+      
+      // Reset form
+      assignmentForm.reset();
+    });
+    
+    // Render routes
+    function renderRoutes() {
+      if (routes.length === 0) {
+        routesContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📍</div>
+            <p>No routes have been created yet.</p>
+            <p>Create a new route using the form above.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      routesContainer.innerHTML = `
+        <div class="route-grid">
+          ${routes.map(route => `
+            <div class="route-card" data-id="${route.id}">
+              <h3 class="route-name">${route.name}</h3>
+              <div class="route-details">
+                <div>From: ${route.startLocation}</div>
+                <div>To: ${route.endLocation}</div>
+                <div>Duration: ${route.estimatedDuration} minutes</div>
+              </div>
+              <div class="route-actions">
+                <button class="route-button edit-route" data-id="${route.id}">Edit</button>
+                <button class="route-button toggle-route" data-id="${route.id}" data-active="${route.isActive}">
+                  ${route.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      
+      // Add event listeners for route actions
+      document.querySelectorAll('.edit-route').forEach(button => {
+        button.addEventListener('click', function() {
+          const routeId = parseInt(this.getAttribute('data-id'));
+          editRoute(routeId);
+        });
+      });
+      
+      document.querySelectorAll('.toggle-route').forEach(button => {
+        button.addEventListener('click', function() {
+          const routeId = parseInt(this.getAttribute('data-id'));
+          const isActive = this.getAttribute('data-active') === 'true';
+          toggleRouteStatus(routeId, !isActive);
+        });
+      });
+    }
+    
+    // Update route select dropdown
+    function updateRouteSelect() {
+      routeSelect.innerHTML = '<option value="">-- Select a route --</option>';
+      
+      const activeRoutes = routes.filter(route => route.isActive);
+      activeRoutes.forEach(route => {
+        const option = document.createElement('option');
+        option.value = route.id;
+        option.textContent = route.name;
+        routeSelect.appendChild(option);
+      });
+    }
+    
+    // Fetch drivers for assignment
+    async function fetchDrivers() {
+      try {
+        const response = await fetch('/api/users?userType=driver');
+        if (response.ok) {
+          const drivers = await response.json();
+          
+          driverSelect.innerHTML = '<option value="">-- Select a driver --</option>';
+          drivers.forEach(driver => {
+            const option = document.createElement('option');
+            option.value = driver.id;
+            option.textContent = driver.name || driver.username;
+            driverSelect.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching drivers:', error);
+      }
+    }
+    
+    // Render assignments
+    function renderAssignments() {
+      if (assignments.length === 0) {
+        assignmentsContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <p>No driver assignments have been created yet.</p>
+            <p>Assign drivers to routes using the form above.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      assignmentsContainer.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Route</th>
+              <th>Driver</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${assignments.map(assignment => {
+              const route = routes.find(r => r.id === assignment.routeId) || { name: 'Unknown Route' };
+              return `
+                <tr data-id="${assignment.id}">
+                  <td>${assignment.assignmentDate}</td>
+                  <td>${route.name}</td>
+                  <td>Driver ID: ${assignment.driverId}</td>
+                  <td>
+                    <span class="status ${assignment.status === 'scheduled' ? 'active' : 'inactive'}">
+                      ${assignment.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="route-button edit-assignment" data-id="${assignment.id}">Edit</button>
+                    <button class="route-button delete-assignment" data-id="${assignment.id}">Delete</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      // Add event listeners for assignment actions
+      document.querySelectorAll('.edit-assignment').forEach(button => {
+        button.addEventListener('click', function() {
+          const assignmentId = parseInt(this.getAttribute('data-id'));
+          editAssignment(assignmentId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-assignment').forEach(button => {
+        button.addEventListener('click', function() {
+          const assignmentId = parseInt(this.getAttribute('data-id'));
+          deleteAssignment(assignmentId);
+        });
+      });
+    }
+    
+    // Edit route
+    function editRoute(routeId) {
+      const route = routes.find(r => r.id === routeId);
+      if (!route) return;
+      
+      // Populate form
+      document.getElementById('route-name').value = route.name;
+      document.getElementById('route-start').value = route.startLocation;
+      document.getElementById('route-end').value = route.endLocation;
+      document.getElementById('route-duration').value = route.estimatedDuration;
+      document.getElementById('route-description').value = route.description || '';
+      
+      // Change form to edit mode
+      routeForm.setAttribute('data-edit-id', routeId);
+      document.querySelector('#route-form button[type="submit"]').textContent = 'Update Route';
+      
+      // Scroll to form
+      routeForm.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Toggle route status
+    function toggleRouteStatus(routeId, isActive) {
+      const routeIndex = routes.findIndex(r => r.id === routeId);
+      if (routeIndex === -1) return;
+      
+      routes[routeIndex].isActive = isActive;
+      localStorage.setItem('routes', JSON.stringify(routes));
+      
+      // Update UI
+      renderRoutes();
+      updateRouteSelect();
+    }
+    
+    // Edit assignment
+    function editAssignment(assignmentId) {
+      const assignment = assignments.find(a => a.id === assignmentId);
+      if (!assignment) return;
+      
+      // Populate form
+      document.getElementById('route-select').value = assignment.routeId;
+      document.getElementById('driver-select').value = assignment.driverId;
+      document.getElementById('assignment-date').value = assignment.assignmentDate;
+      document.getElementById('assignment-notes').value = assignment.notes || '';
+      
+      // Change form to edit mode
+      assignmentForm.setAttribute('data-edit-id', assignmentId);
+      document.querySelector('#assignment-form button[type="submit"]').textContent = 'Update Assignment';
+      
+      // Scroll to form
+      assignmentForm.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Delete assignment
+    function deleteAssignment(assignmentId) {
+      if (confirm('Are you sure you want to delete this assignment?')) {
+        assignments = assignments.filter(a => a.id !== assignmentId);
+        localStorage.setItem('assignments', JSON.stringify(assignments));
+        
+        // Update UI
+        renderAssignments();
+      }
+    }
+    
+    // Handle logout
+    logoutButton.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        if (response.ok) {
+          window.location.href = '/login.html';
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+    
+    // Initialize
+    checkAuth();
+    renderRoutes();
+    renderAssignments();
+    updateRouteSelect();
+    fetchDrivers();
+    
+    // Set current date as default for assignment date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('assignment-date').value = today;
+  </script>
+</body>
+</html>
