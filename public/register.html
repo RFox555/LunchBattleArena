@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register - Transportation Tracking System</title>
-  <!-- Ensure HTML extension -->
-  <script src="/js/ensure-extension.js"></script>
+  <title>Registration - Transportation Tracking System</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -15,21 +13,28 @@
       color: #333;
     }
     .container {
-      max-width: 500px;
+      max-width: 800px;
       margin: 0 auto;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .form-hero {
+        display: none;
+      }
     }
     h1 {
-      text-align: center;
-      color: #2563eb;
       margin-top: 0;
-    }
-    .logo {
-      font-size: 42px;
-      text-align: center;
+      color: #e11d48;
+      font-size: 24px;
       margin-bottom: 20px;
     }
     .form-group {
@@ -37,27 +42,20 @@
     }
     label {
       display: block;
-      font-weight: bold;
       margin-bottom: 5px;
+      font-weight: 500;
+      color: #374151;
     }
     input, select {
       width: 100%;
       padding: 10px;
-      border: 1px solid #ddd;
+      border: 1px solid #d1d5db;
       border-radius: 4px;
       font-size: 16px;
       box-sizing: border-box;
     }
-    .employee-id-field {
-      display: none;
-    }
-    .employee-id-hint {
-      font-size: 14px;
-      color: #6b7280;
-      margin-top: 5px;
-    }
     button {
-      background-color: #2563eb;
+      background-color: #e11d48;
       color: white;
       border: none;
       padding: 12px 20px;
@@ -65,20 +63,60 @@
       font-size: 16px;
       cursor: pointer;
       width: 100%;
-      font-weight: bold;
+      font-weight: 500;
       margin-top: 10px;
     }
     button:hover {
-      background-color: #1d4ed8;
+      background-color: #be123c;
     }
     .error-message {
+      color: #dc2626;
       background-color: #fee2e2;
       border: 1px solid #fca5a5;
-      color: #b91c1c;
-      padding: 15px;
+      padding: 10px;
       border-radius: 4px;
-      margin-top: 20px;
+      margin-top: 15px;
       display: none;
+    }
+    .success-message {
+      color: #16a34a;
+      background-color: #dcfce7;
+      border: 1px solid #86efac;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 15px;
+      display: none;
+    }
+    .form-hero {
+      background-color: #880E19;
+      color: white;
+      padding: 30px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .hero-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .hero-text {
+      margin-bottom: 20px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    .feature-icon {
+      margin-right: 10px;
+      font-size: 18px;
+    }
+    .feature-text {
+      font-size: 14px;
     }
     .login-link {
       text-align: center;
@@ -86,56 +124,93 @@
       font-size: 14px;
     }
     .login-link a {
-      color: #2563eb;
+      color: #e11d48;
       text-decoration: none;
     }
     .login-link a:hover {
       text-decoration: underline;
     }
+    .logo {
+      width: 80px;
+      margin-bottom: 20px;
+    }
+    .rider-id-section {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">🚌</div>
-    <h1>Register</h1>
+    <div class="registration-form">
+      <h1>Create New Account</h1>
+      
+      <form id="register-form">
+        <div class="form-group">
+          <label for="userType">Account Type:</label>
+          <select id="userType" name="userType" required>
+            <option value="rider">Employee</option>
+            <option value="driver">Driver</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="name">Full Name:</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        
+        <div id="riderIdSection" class="form-group rider-id-section">
+          <label for="riderId">Employee ID (5 digits):</label>
+          <input type="text" id="riderId" name="riderId" maxlength="5" pattern="[0-9]{5}" placeholder="Enter your 5-digit employee ID">
+          <small>This is your unique 5-digit ID for transportation. You can only set this once.</small>
+        </div>
+        
+        <button type="submit">Create Account</button>
+      </form>
+      
+      <div id="error-message" class="error-message"></div>
+      <div id="success-message" class="success-message"></div>
+      
+      <div class="login-link">
+        Already have an account? <a href="/login.html">Login</a>
+      </div>
+    </div>
     
-    <form id="register-form">
-      <div class="form-group">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
+    <div class="form-hero">
+      <img src="https://koutfoodgroup.com/wp-content/uploads/2023/03/KFGRedPng.png" alt="Kout Food Group Logo" class="logo">
+      <div class="hero-title">Transportation Tracking System</div>
+      <div class="hero-text">
+        Join our transportation tracking platform to enhance your experience with efficient, safe, and convenient transportation services.
       </div>
       
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Easy check-in and check-out for transportation services</div>
       </div>
       
-      <div class="form-group">
-        <label for="name">Full Name:</label>
-        <input type="text" id="name" name="name" required>
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Real-time tracking of transportation vehicles</div>
       </div>
       
-      <div class="form-group">
-        <label for="userType">Account Type:</label>
-        <select id="userType" name="userType" required>
-          <option value="rider">Employee</option>
-          <option value="driver">Driver</option>
-        </select>
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Secure authentication and user management</div>
       </div>
       
-      <div class="form-group employee-id-field" id="employee-id-container">
-        <label for="riderId">Your 5-Digit Employee ID:</label>
-        <input type="text" id="riderId" name="riderId" maxlength="5" pattern="[0-9]{5}" title="Please enter a 5-digit number">
-        <div class="employee-id-hint">Choose a unique 5-digit number that will be used for check-ins. This cannot be changed later.</div>
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Provide feedback on transportation quality</div>
       </div>
-      
-      <button type="submit">Register</button>
-    </form>
-    
-    <div id="error-message" class="error-message"></div>
-    
-    <div class="login-link">
-      Already have an account? <a href="/login.html">Login</a>
     </div>
   </div>
   
@@ -143,50 +218,50 @@
     // DOM Elements
     const registerForm = document.getElementById('register-form');
     const userTypeSelect = document.getElementById('userType');
-    const employeeIdContainer = document.getElementById('employee-id-container');
+    const riderIdSection = document.getElementById('riderIdSection');
+    const riderIdInput = document.getElementById('riderId');
     const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
     
-    // Show/hide employee ID field based on user type (database field is still 'rider')
+    // Show/hide rider ID field based on user type
     userTypeSelect.addEventListener('change', function() {
       if (this.value === 'rider') {
-        employeeIdContainer.style.display = 'block';
-        document.getElementById('riderId').required = true;
+        riderIdSection.style.display = 'block';
+        riderIdInput.required = true;
       } else {
-        employeeIdContainer.style.display = 'none';
-        document.getElementById('riderId').required = false;
+        riderIdSection.style.display = 'none';
+        riderIdInput.required = false;
       }
     });
     
-    // Set initial state
-    if (userTypeSelect.value === 'rider') {
-      employeeIdContainer.style.display = 'block';
-      document.getElementById('riderId').required = true;
-    }
+    // Trigger change event to set initial state
+    userTypeSelect.dispatchEvent(new Event('change'));
     
     // Handle form submission
     registerForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      // Hide previous error messages
+      // Hide any existing messages
       errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
       
       // Get form data
       const formData = new FormData(registerForm);
-      const userData = {
+      const registerData = {
         username: formData.get('username'),
         password: formData.get('password'),
         name: formData.get('name'),
-        userType: formData.get('userType'),
-        riderId: formData.get('userType') === 'rider' ? formData.get('riderId') : null
+        userType: formData.get('userType')
       };
       
-      // Validate employee ID if the user is an employee (stored as 'rider' in database)
-      if (userData.userType === 'rider') {
-        if (!userData.riderId || userData.riderId.length !== 5 || !/^\d+$/.test(userData.riderId)) {
-          errorMessage.textContent = 'Please enter a valid 5-digit Employee ID number';
-          errorMessage.style.display = 'block';
+      // Add rider ID for employee accounts
+      if (registerData.userType === 'rider') {
+        const riderId = formData.get('riderId');
+        if (!riderId || riderId.length !== 5 || !/^\d{5}$/.test(riderId)) {
+          showError('Employee ID must be exactly 5 digits.');
           return;
         }
+        registerData.riderId = riderId;
       }
       
       try {
@@ -196,27 +271,42 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(userData)
+          body: JSON.stringify(registerData)
         });
         
         if (response.ok) {
-          // Registration successful, redirect to login
-          const data = await response.json();
-          console.log('Registration successful:', data);
-          window.location.href = '/login.html?registered=true';
+          // Registration successful
+          const user = await response.json();
+          console.log('Registration successful:', user);
+          
+          showSuccess('Account created successfully! You will be redirected to the login page.');
+          
+          // Redirect to login page after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/login.html?registered=true';
+          }, 2000);
         } else {
           // Registration failed
           const error = await response.json();
           console.error('Registration error:', error);
-          errorMessage.textContent = error.message || 'Registration failed. Please try again.';
-          errorMessage.style.display = 'block';
+          showError(error.message || 'Registration failed. Please try again.');
         }
       } catch (error) {
         console.error('Error:', error);
-        errorMessage.textContent = 'An error occurred during registration. Please try again.';
-        errorMessage.style.display = 'block';
+        showError('An error occurred during registration. Please try again.');
       }
     });
+    
+    // Helper functions for displaying messages
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+    
+    function showSuccess(message) {
+      successMessage.textContent = message;
+      successMessage.style.display = 'block';
+    }
   </script>
 </body>
 </html>

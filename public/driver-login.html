@@ -13,21 +13,28 @@
       color: #333;
     }
     .container {
-      max-width: 400px;
+      max-width: 800px;
       margin: 0 auto;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .form-hero {
+        display: none;
+      }
     }
     h1 {
-      text-align: center;
-      color: #2563eb;
       margin-top: 0;
-    }
-    .logo {
-      font-size: 42px;
-      text-align: center;
+      color: #880E19;
+      font-size: 24px;
       margin-bottom: 20px;
     }
     .form-group {
@@ -35,19 +42,20 @@
     }
     label {
       display: block;
-      font-weight: bold;
       margin-bottom: 5px;
+      font-weight: 500;
+      color: #374151;
     }
     input {
       width: 100%;
       padding: 10px;
-      border: 1px solid #ddd;
+      border: 1px solid #d1d5db;
       border-radius: 4px;
       font-size: 16px;
       box-sizing: border-box;
     }
     button {
-      background-color: #2563eb;
+      background-color: #880E19;
       color: white;
       border: none;
       padding: 12px 20px;
@@ -55,70 +63,159 @@
       font-size: 16px;
       cursor: pointer;
       width: 100%;
-      font-weight: bold;
+      font-weight: 500;
       margin-top: 10px;
     }
     button:hover {
-      background-color: #1d4ed8;
+      background-color: #6c0814;
     }
     .error-message {
+      color: #dc2626;
       background-color: #fee2e2;
       border: 1px solid #fca5a5;
-      color: #b91c1c;
-      padding: 15px;
+      padding: 10px;
       border-radius: 4px;
-      margin-top: 20px;
+      margin-top: 15px;
       display: none;
     }
-    .success-message {
-      background-color: #dcfce7;
-      border: 1px solid #86efac;
-      color: #166534;
-      padding: 15px;
+    .form-hero {
+      background-color: #880E19;
+      color: white;
+      padding: 30px;
       border-radius: 4px;
-      margin-top: 20px;
-      display: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
-    .links {
+    .hero-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .hero-text {
+      margin-bottom: 20px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    .feature-icon {
+      margin-right: 10px;
+      font-size: 18px;
+    }
+    .feature-text {
+      font-size: 14px;
+    }
+    .register-link {
       text-align: center;
       margin-top: 20px;
       font-size: 14px;
     }
-    .links a {
-      color: #2563eb;
+    .register-link a {
+      color: #880E19;
       text-decoration: none;
     }
-    .links a:hover {
+    .register-link a:hover {
       text-decoration: underline;
+    }
+    .logo {
+      width: 80px;
+      margin-bottom: 20px;
+    }
+    .navigation {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .nav-link {
+      display: inline-block;
+      margin: 0 10px;
+      color: #6B7280;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .nav-link:hover {
+      color: #880E19;
+    }
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      color: #6B7280;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .home-link:hover {
+      color: #880E19;
+    }
+    .home-icon {
+      margin-right: 5px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">🚌</div>
-    <h1>Driver Login</h1>
-    
-    <form id="login-form">
-      <div class="form-group">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
+    <div class="login-form">
+      <a href="/" class="home-link">
+        <span class="home-icon">←</span> Back to Home
+      </a>
+      
+      <h1>Driver Login</h1>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit">Login</button>
+      </form>
+      
+      <div id="error-message" class="error-message"></div>
+      
+      <div class="register-link">
+        Don't have an account? <a href="/register.html">Register</a>
       </div>
       
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
+      <div class="navigation">
+        <a href="/login.html?preselect=rider" class="nav-link">Employee Login</a> |
+        <a href="/login.html?preselect=admin" class="nav-link">Admin Login</a>
+      </div>
+    </div>
+    
+    <div class="form-hero">
+      <img src="https://koutfoodgroup.com/wp-content/uploads/2023/03/KFGRedPng.png" alt="Kout Food Group Logo" class="logo">
+      <div class="hero-title">Driver Portal</div>
+      <div class="hero-text">
+        Access your driver dashboard to manage employee transportation, track your bus, and provide safe transportation services.
       </div>
       
-      <input type="hidden" id="userType" name="userType" value="driver">
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Scan employee QR codes for easy check-in</div>
+      </div>
       
-      <button type="submit">Login</button>
-    </form>
-    
-    <div id="error-message" class="error-message"></div>
-    <div id="success-message" class="success-message"></div>
-    
-    <div class="links">
-      <p><a href="/login.html">Back to Main Login Page</a></p>
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Track your location in real-time</div>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">View your trip history and records</div>
+      </div>
+      
+      <div class="feature">
+        <div class="feature-icon">✓</div>
+        <div class="feature-text">Manage driver check-in/check-out status</div>
+      </div>
     </div>
   </div>
   
@@ -126,19 +223,37 @@
     // DOM Elements
     const loginForm = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
-    const successMessage = document.getElementById('success-message');
+    
+    // Check if user is already logged in
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const user = await response.json();
+          if (user.userType === 'driver') {
+            // Already logged in as driver, redirect to check-in page
+            window.location.replace('/driver-checkin.html');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+      }
+    }
     
     // Handle form submission
     loginForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      // Hide messages
+      // Hide any existing error messages
       errorMessage.style.display = 'none';
-      successMessage.style.display = 'none';
       
       // Get form data
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
+      const formData = new FormData(loginForm);
+      const loginData = {
+        username: formData.get('username'),
+        password: formData.get('password'),
+        userType: 'driver' // Always set to driver for this login page
+      };
       
       try {
         // Send login request
@@ -147,39 +262,41 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            username,
-            password,
-            userType: 'driver'
-          }),
-          credentials: 'include'
+          body: JSON.stringify(loginData)
         });
         
         if (response.ok) {
           // Login successful
           const user = await response.json();
+          console.log('Login successful:', user);
           
-          // Show success message before redirecting
-          successMessage.textContent = 'Login successful! Redirecting...';
-          successMessage.style.display = 'block';
-          
-          // Wait a moment, then redirect to driver checkin directly
-          setTimeout(() => {
-            // This will now directly go to the exact URL - no redirect loop
-            window.location.href = '/driver-checkin.html';
-          }, 1000);
+          if (user.userType === 'driver') {
+            // Redirect to driver check-in page
+            window.location.replace('/driver-checkin.html');
+          } else {
+            // Wrong user type
+            showError('This login is only for drivers. Please use the appropriate login page for your account type.');
+          }
         } else {
           // Login failed
           const error = await response.json();
-          errorMessage.textContent = error.message || 'Login failed. Please check your credentials and try again.';
-          errorMessage.style.display = 'block';
+          console.error('Login error:', error);
+          showError(error.message || 'Login failed. Please check your credentials and try again.');
         }
       } catch (error) {
         console.error('Error:', error);
-        errorMessage.textContent = 'An error occurred during login. Please try again.';
-        errorMessage.style.display = 'block';
+        showError('An error occurred during login. Please try again.');
       }
     });
+    
+    // Helper function for displaying error message
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+    }
+    
+    // Check authentication on page load
+    checkAuth();
   </script>
 </body>
 </html>
