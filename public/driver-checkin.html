@@ -548,11 +548,15 @@
       errorMessage.style.display = 'none';
       
       // First, make sure the driver is checked in
-      if (!driverIsCheckedIn) {
+      // Check both variables to be safe
+      if (!driverIsCheckedIn && (!driverStatus || !driverStatus.isCheckedIn)) {
         errorMessage.textContent = 'You must check in before you can scan employee QR codes.';
         errorMessage.style.display = 'block';
         return;
       }
+      
+      // Set global variable to match
+      window.driverIsCheckedIn = true;
       
       // Create QR code scanner if not already created
       if (!html5QrCode) {
