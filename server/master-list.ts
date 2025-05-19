@@ -18,23 +18,31 @@ export function registerMasterListRoutes(app: Express) {
         });
       }
       
-      // Get the user to check if they're on the master list
-      const user = await storage.getUserByRiderId(riderId);
+      // Check if this ID is in the uploaded master list
+      // First query the master list directly
+      const [masterListEntry] = await db
+        .select()
+        .from(masterList)
+        .where(eq(masterList.employeeId, riderId));
       
-      // For this implementation, just check if the user is active
-      // This is a simpler approach than full master list implementation
-      const isOnList = Boolean(user?.isActive);
+      // If found and active, it's on the list
+      if (masterListEntry && masterListEntry.isActive) {
+        return res.status(200).json({
+          riderId,
+          isOnList: true
+        });
+      }
       
-      // Return the result
+      // Otherwise, this ID is not on the master list
       return res.status(200).json({
         riderId,
-        isOnList
+        isOnList: false
       });
     } catch (error) {
       console.error('Error checking master list:', error);
       return res.status(500).json({ 
         message: 'Failed to check master list',
-        isOnList: true // Default to true on error
+        isOnList: true // Default to true on error to avoid blocking check-ins
       });
     }
   });
