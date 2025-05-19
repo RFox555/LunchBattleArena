@@ -547,11 +547,9 @@
       // Hide any previous error messages
       errorMessage.style.display = 'none';
       
-      // First, make sure the driver is checked in
-      // Using the global variable directly since the function might not be loaded yet
-      const isDriverCheckedIn = window.isCheckedIn || (window.driverStatus && window.driverStatus.isCheckedIn) || false;
-      
-      if (!isDriverCheckedIn) {
+      // Check if the global driverIsCheckedIn variable is true
+      // This variable is set when the driver checks in and is maintained throughout the session
+      if (!driverIsCheckedIn) {
         errorMessage.textContent = 'You must check in before you can scan employee QR codes.';
         errorMessage.style.display = 'block';
         return;
