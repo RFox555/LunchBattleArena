@@ -218,15 +218,14 @@
           
           console.log('Login successful, redirecting based on user type:', user.userType);
           
-          // Don't verify session, just redirect immediately
+          // Fixed direct redirects for all user types
           if (user.userType === 'rider') {
             console.log('Redirecting to employee dashboard...');
-            // Use replace instead of href to avoid redirect loops
             window.location.replace('/employee-dashboard.html');
           } else if (user.userType === 'driver') {
-            console.log('Redirecting to driver login page...');
-            // Use a dedicated driver login page instead of direct redirect
-            window.location.replace('/driver-login.html');
+            console.log('Redirecting directly to driver check-in page...');
+            // Go directly to driver-checkin.html to avoid the redirection loop
+            window.location.replace('/driver-checkin.html');
           } else if (user.userType === 'admin') {
             console.log('Redirecting to admin dashboard...');
             window.location.replace('/admin-dashboard.html');
