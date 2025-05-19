@@ -191,9 +191,6 @@ export const masterListUploadSchema = z.object({
     .min(1, "At least one employee ID must be provided"),
 });
 
-// Route planning will be implemented in future updates
-
-// Other schemas
 export type MasterListItem = typeof masterList.$inferSelect;
 export type InsertMasterListItem = z.infer<typeof masterListItemSchema>;
 export type MasterListUpload = z.infer<typeof masterListUploadSchema>;

@@ -69,9 +69,6 @@ export interface IStorage {
   updateMasterList(employeeIds: string[], adminId?: number): Promise<{ added: number, updated: number, deactivated: number }>;
   getMasterList(activeOnly?: boolean): Promise<MasterListItem[]>;
   
-  // Future route operations will go here
-  // For now we're keeping the existing functionality intact
-  
   // Setup operations
   setupDatabase(): Promise<void>;
   seedTestData(): Promise<void>;
