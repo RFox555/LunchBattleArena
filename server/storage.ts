@@ -61,6 +61,13 @@ export interface IStorage {
     totalRatings: number;
   }>;
   
+  // Master list operations
+  addToMasterList(employeeId: string, adminId?: number, notes?: string): Promise<MasterListItem>;
+  getMasterListItem(employeeId: string): Promise<MasterListItem | undefined>;
+  isOnMasterList(employeeId: string): Promise<boolean>;
+  updateMasterList(employeeIds: string[], adminId?: number): Promise<{ added: number, updated: number, deactivated: number }>;
+  getMasterList(activeOnly?: boolean): Promise<MasterListItem[]>;
+  
   // Setup operations
   setupDatabase(): Promise<void>;
   seedTestData(): Promise<void>;

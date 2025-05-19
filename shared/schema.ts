@@ -45,6 +45,16 @@ export const busLocations = pgTable("bus_locations", {
   status: text("status").default("active"), // active, inactive, off-duty, etc.
 });
 
+// Database schema for employee master list
+export const masterList = pgTable("master_list", {
+  id: serial("id").primaryKey(),
+  employeeId: text("employee_id").notNull().unique(), // The 5-digit employee ID
+  isActive: boolean("is_active").default(true).notNull(), // Whether this ID is currently active
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(), // When this record was last updated
+  addedBy: integer("added_by"), // User ID of admin who added this record
+  notes: text("notes") // Optional notes about this employee
+});
+
 // Database schema for bus condition and comfort ratings
 export const busRatings = pgTable("bus_ratings", {
   id: serial("id").primaryKey(),
@@ -168,3 +178,19 @@ export type UpdateBusLocation = z.infer<typeof updateBusLocationSchema>;
 export type InsertBusRating = z.infer<typeof insertBusRatingSchema>;
 export type BusRating = typeof busRatings.$inferSelect;
 export type BusRatingFormData = z.infer<typeof busRatingFormSchema>;
+
+// Master list types
+export const masterListItemSchema = createInsertSchema(masterList).pick({
+  employeeId: true,
+  isActive: true,
+  notes: true,
+});
+
+export const masterListUploadSchema = z.object({
+  employeeIds: z.array(z.string().length(5, "Employee ID must be exactly 5 characters"))
+    .min(1, "At least one employee ID must be provided"),
+});
+
+export type MasterListItem = typeof masterList.$inferSelect;
+export type InsertMasterListItem = z.infer<typeof masterListItemSchema>;
+export type MasterListUpload = z.infer<typeof masterListUploadSchema>;
