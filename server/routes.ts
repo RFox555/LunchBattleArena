@@ -238,11 +238,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // SECURITY: Prevent admin account creation from public registration
       if (userData.userType === "admin") {
         const adminSecret = req.body.adminSecret;
+        const hardcodedSecret = "kout_admin_2025"; // Hardcoded for now instead of using environment variable
         
         // Check if admin secret is provided and correct
-        if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET || process.env.ADMIN_SECRET === undefined) {
+        if (!adminSecret || adminSecret !== hardcodedSecret) {
           return res.status(403).json({ 
-            message: "Unauthorized: Creating administrator accounts requires authorization" 
+            message: "Unauthorized: Creating administrator accounts requires valid authorization code" 
           });
         }
         
