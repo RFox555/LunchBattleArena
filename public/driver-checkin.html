@@ -511,48 +511,44 @@
       return date.toLocaleString();
     }
     
-    // QR scanner implementation - COMPLETE REWRITE
+    // DIRECT QR SCANNER IMPLEMENTATION
     function initQrScanner() {
       console.log("Initializing QR scanner");
       
-      // Start button: check driver status first, then start scanner
+      // Create scanner directly - no conditional checks
+      try {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+          console.log("QR scanner created successfully");
+        }
+      } catch (err) {
+        console.error("Failed to create QR scanner:", err);
+        return;
+      }
+      
+      // Setup start button
       if (startScanButton) {
         startScanButton.addEventListener('click', function() {
           console.log("Start scan button clicked");
-          
-          // Use global function from driver-checkin.js
-          if (typeof window.isDriverCheckedIn === 'function' && window.isDriverCheckedIn()) {
-            console.log("Driver is checked in, starting scanner");
-            startScanner();
-          } else {
-            console.log("Driver is NOT checked in, showing error");
-            errorMessage.textContent = 'You must check in before scanning employee QR codes.';
-            errorMessage.style.display = 'block';
-          }
+          startQrScanner();
         });
       }
       
-      // Stop button: simply stop the scanner
+      // Setup stop button
       if (stopScanButton) {
-        stopScanButton.addEventListener('click', stopScanner);
+        stopScanButton.addEventListener('click', function() {
+          console.log("Stop scan button clicked");
+          stopQrScanner();
+        });
       }
       
-      // Manual entry button
+      // Setup manual entry
       const manualInput = document.getElementById('qr-manual-input');
       const manualSubmit = document.getElementById('qr-manual-submit');
       
       if (manualInput && manualSubmit) {
         manualSubmit.addEventListener('click', function() {
           console.log("Manual submit clicked");
-          
-          // Use global function from driver-checkin.js
-          if (typeof window.isDriverCheckedIn !== 'function' || !window.isDriverCheckedIn()) {
-            console.log("Driver not checked in for manual entry");
-            errorMessage.textContent = 'You must check in before processing employee IDs.';
-            errorMessage.style.display = 'block';
-            return;
-          }
-          
           const employeeId = manualInput.value.trim();
           if (employeeId) {
             console.log("Processing employee ID:", employeeId);
@@ -562,82 +558,72 @@
         });
       }
       
-      console.log("QR scanner controls initialized");
+      console.log("QR scanner setup complete");
     }
     
-    // Start scanner
-    function startScanner() {
+    // Start QR scanner - simplified
+    function startQrScanner() {
       try {
-        console.log("Starting scanner");
+        // Hide any previous errors
         errorMessage.style.display = 'none';
-        
-        // Create scanner if needed
-        if (!html5QrCode) {
-          console.log("Creating new HTML5 QR scanner");
-          html5QrCode = new Html5Qrcode("reader");
-        }
-        
-        // Configure scanner
+                
+        // Configure and start scanner
         const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
         
-        // Start camera and scanning
         html5QrCode.start(
-          { facingMode: "environment" }, // Use back camera
+          { facingMode: "environment" },
           qrConfig,
-          handleSuccessfulScan,
-          handleScanError
+          onQrCodeSuccess,
+          onQrCodeFailure
         ).then(() => {
-          console.log("Scanner started successfully");
+          console.log("QR scanner started successfully");
           isScanning = true;
           startScanButton.style.display = 'none';
           stopScanButton.style.display = 'block';
         }).catch(err => {
-          console.error("Failed to start scanner:", err);
+          console.error("Failed to start QR scanner:", err);
           errorMessage.textContent = 'Failed to start scanner. Please check camera permissions.';
           errorMessage.style.display = 'block';
         });
       } catch (error) {
-        console.error("Error starting scanner:", error);
+        console.error("Error starting QR scanner:", error);
         errorMessage.textContent = 'Error initializing scanner. Please try again.';
         errorMessage.style.display = 'block';
       }
     }
     
-    // Handle successful scan
-    function handleSuccessfulScan(decodedText) {
-      console.log("Successful scan:", decodedText);
+    // Stop QR scanner - simplified
+    function stopQrScanner() {
+      if (html5QrCode && isScanning) {
+        html5QrCode.stop().then(() => {
+          console.log("QR scanner stopped successfully");
+          isScanning = false;
+          startScanButton.style.display = 'block';
+          stopScanButton.style.display = 'none';
+        }).catch(err => {
+          console.error("Error stopping QR scanner:", err);
+        });
+      }
+    }
+    
+    // Handle successful QR code scan
+    function onQrCodeSuccess(decodedText) {
+      console.log("Successful QR code scan:", decodedText);
       
       // Play success sound
       const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
       beep.play();
       
       // Stop the scanner
-      stopScanner();
+      stopQrScanner();
       
-      // Process the employee ID
+      // Process the scanned code
       checkInEmployee(decodedText.trim());
     }
     
-    // Handle scan errors
-    function handleScanError(error) {
-      // Just log errors, don't display to user
+    // Handle QR code scan errors (just log them)
+    function onQrCodeFailure(error) {
       console.log("QR scan error (normal during scanning):", error);
-    }
-    
-    // Stop scanner
-    function stopScanner() {
-      console.log("Stopping scanner, current state - isScanning:", isScanning);
-      
-      if (html5QrCode && isScanning) {
-        html5QrCode.stop().then(() => {
-          console.log("Scanner stopped successfully");
-          isScanning = false;
-          startScanButton.style.display = 'block';
-          stopScanButton.style.display = 'none';
-        }).catch(err => {
-          console.error("Error stopping scanner:", err);
-        });
-      }
     }
     
     // Enable QR scanner
@@ -1200,6 +1186,5 @@
   <script src="/js/html5-qrcode.min.js"></script>
   <script src="/js/driver-checkin.js"></script>
   <script src="/js/driver-location.js"></script>
-  <script src="/js/qr-scanner.js"></script>
 </body>
 </html>
