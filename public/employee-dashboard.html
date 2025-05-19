@@ -6,9 +6,6 @@
   <title>Transportation Tracking System - Employee Dashboard</title>
   <!-- Ensure HTML extension -->
   <script src="/js/ensure-extension.js"></script>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#e11d48">
-  <link rel="apple-touch-icon" href="/images/icon-192x192.png">
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -142,21 +139,6 @@
   </style>
   <!-- Include QR Code Generator Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
-  <!-- Register service worker for PWA functionality -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(error => {
-            console.log('ServiceWorker registration failed: ', error);
-          });
-      });
-    }
-  </script>
 </head>
 <body>
   <div class="container">
