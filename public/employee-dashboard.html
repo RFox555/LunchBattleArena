@@ -287,6 +287,25 @@
         // Generate QR code
         generateQrCode(currentUser.riderId);
         
+        // Check if employee is on master list and show warning if not
+        if (currentUser.onMasterList === false) {
+          const warningEl = document.createElement('div');
+          warningEl.className = 'status-warning';
+          warningEl.innerHTML = `
+            <strong>⚠️ Notice:</strong> Your employee ID ${currentUser.riderId} 
+            is not on the authorized master list. Please contact your administrator.
+          `;
+          warningEl.style.backgroundColor = '#fff3cd';
+          warningEl.style.color = '#856404';
+          warningEl.style.border = '1px solid #ffeeba';
+          warningEl.style.padding = '12px';
+          warningEl.style.borderRadius = '4px';
+          warningEl.style.margin = '15px 0';
+          
+          // Insert warning after QR code
+          qrcodeContainer.parentNode.insertBefore(warningEl, qrcodeContainer.nextSibling);
+        }
+        
         // Fetch trip history
         fetchTripHistory();
       } catch (error) {

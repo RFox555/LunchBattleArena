@@ -139,10 +139,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         // Set user type to admin for the session
         user.userType = 'admin';
-      } else {
-        // Regular user login check
+      } else if (data.userType === 'rider') {
+        // Employee login check with master list validation
         if (!user || user.password !== data.password || user.userType !== data.userType) {
-          console.log("Login failed - invalid credentials");
+          console.log("Employee login failed - invalid credentials");
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
+        
+        // Check if this employee is on the master list
+        if (user.riderId) {
+          const isOnMasterList = await storage.isOnMasterList(user.riderId);
+          if (!isOnMasterList) {
+            console.log(`Employee ${user.username} (ID: ${user.riderId}) is not on the master list but can still log in with warning`);
+            user.onMasterList = false;
+          } else {
+            user.onMasterList = true;
+          }
+        }
+      } else {
+        // Driver login check 
+        if (!user || user.password !== data.password || user.userType !== data.userType) {
+          console.log("Driver login failed - invalid credentials");
           return res.status(401).json({ message: "Invalid credentials" });
         }
       }
