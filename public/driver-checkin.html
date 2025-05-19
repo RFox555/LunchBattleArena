@@ -464,6 +464,219 @@
   </div>
   
   <script src="/js/html5-qrcode.min.js"></script>
+  <!-- Direct QR Scanner Implementation -->
+  <script>
+    // This is a simple, direct implementation of the QR scanner
+    document.addEventListener('DOMContentLoaded', function() {
+      const startScanBtn = document.getElementById('start-scan');
+      const stopScanBtn = document.getElementById('stop-scan');
+      const manualInput = document.getElementById('qr-manual-input');
+      const manualSubmitBtn = document.getElementById('qr-manual-submit');
+      const successMsg = document.getElementById('success-message');
+      const errorMsg = document.getElementById('error-message');
+      const tripDetails = document.getElementById('trip-details');
+      
+      // Scanner variables
+      let html5QrCode;
+      let isScanning = false;
+      
+      // Initialize scanner
+      try {
+        html5QrCode = new Html5Qrcode("reader");
+        console.log("QR Scanner initialized");
+      } catch (error) {
+        console.error("Failed to initialize scanner:", error);
+      }
+      
+      // Set up event listeners
+      if (startScanBtn) startScanBtn.addEventListener('click', startScanner);
+      if (stopScanBtn) stopScanBtn.addEventListener('click', stopScanner);
+      if (manualSubmitBtn && manualInput) {
+        manualSubmitBtn.addEventListener('click', function() {
+          const employeeId = manualInput.value.trim();
+          if (employeeId) {
+            processEmployeeId(employeeId);
+            manualInput.value = '';
+          }
+        });
+      }
+      
+      // Start scanner
+      function startScanner() {
+        console.log("Starting scanner...");
+        
+        // Hide any messages
+        if (successMsg) successMsg.style.display = 'none';
+        if (errorMsg) errorMsg.style.display = 'none';
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onScanSuccess,
+          onScanError
+        )
+        .then(() => {
+          console.log("Scanner started successfully");
+          isScanning = true;
+          startScanBtn.style.display = 'none';
+          stopScanBtn.style.display = 'inline-block';
+        })
+        .catch(error => {
+          console.error("Failed to start scanner:", error);
+          if (errorMsg) {
+            errorMsg.textContent = "Failed to start scanner. Please check camera permissions.";
+            errorMsg.style.display = 'block';
+          }
+        });
+      }
+      
+      // Stop scanner
+      function stopScanner() {
+        console.log("Stopping scanner...");
+        
+        if (html5QrCode && isScanning) {
+          html5QrCode.stop()
+          .then(() => {
+            console.log("Scanner stopped successfully");
+            isScanning = false;
+            startScanBtn.style.display = 'inline-block';
+            stopScanBtn.style.display = 'none';
+          })
+          .catch(error => {
+            console.error("Failed to stop scanner:", error);
+          });
+        }
+      }
+      
+      // Handle successful scan
+      function onScanSuccess(decodedText) {
+        console.log("QR code detected:", decodedText);
+        
+        // Play success sound
+        playBeep();
+        
+        // Stop scanner
+        stopScanner();
+        
+        // Process the employee ID
+        processEmployeeId(decodedText);
+      }
+      
+      // Handle scan errors
+      function onScanError(error) {
+        // Just log errors, don't show to user
+        console.log("QR scan error:", error);
+      }
+      
+      // Process employee ID (from scan or manual entry)
+      function processEmployeeId(employeeId) {
+        console.log("Processing employee ID:", employeeId);
+        
+        // Validate employee ID
+        if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+          if (errorMsg) {
+            errorMsg.textContent = "Invalid employee ID. Please enter a 5-digit number.";
+            errorMsg.style.display = 'block';
+          }
+          return;
+        }
+        
+        // Create check-in data
+        const checkInData = {
+          riderId: employeeId,
+          location: "Bus Stop",
+          note: "Checked in via QR scanner"
+        };
+        
+        // Send API request
+        fetch('/api/trips', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(checkInData),
+          credentials: 'include'
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.message || "Failed to check in employee");
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log("Check-in successful:", data);
+          
+          // Show success message
+          if (successMsg) {
+            successMsg.textContent = `Employee ${data.riderId} has been successfully checked in!`;
+            successMsg.style.display = 'block';
+          }
+          
+          // Update trip details
+          updateTripDetails(data);
+          
+          // If there's a function to refresh trips, call it
+          if (typeof fetchRecentCheckIns === 'function') {
+            fetchRecentCheckIns();
+          }
+        })
+        .catch(error => {
+          console.error("Check-in error:", error);
+          if (errorMsg) {
+            errorMsg.textContent = error.message || "Error checking in employee";
+            errorMsg.style.display = 'block';
+          }
+        });
+      }
+      
+      // Update trip details
+      function updateTripDetails(trip) {
+        if (!tripDetails) return;
+        
+        const tripId = document.getElementById('trip-id');
+        const tripEmployee = document.getElementById('trip-employee');
+        const tripLocation = document.getElementById('trip-location');
+        const tripTime = document.getElementById('trip-time');
+        const tripNote = document.getElementById('trip-note');
+        
+        if (tripId && tripEmployee && tripLocation && tripTime) {
+          tripId.textContent = trip.id;
+          tripEmployee.textContent = trip.riderId;
+          tripLocation.textContent = trip.location || 'Not specified';
+          
+          // Support both field names
+          const timestamp = trip.timestamp || trip.check_in_time;
+          tripTime.textContent = formatTime(timestamp);
+          
+          if (tripNote) {
+            tripNote.textContent = trip.note || 'No note provided';
+          }
+          
+          // Show the trip details
+          tripDetails.style.display = 'block';
+        }
+      }
+      
+      // Format time
+      function formatTime(timestamp) {
+        return new Date(timestamp).toLocaleString();
+      }
+      
+      // Play beep sound
+      function playBeep() {
+        try {
+          const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+          beep.play();
+        } catch (error) {
+          console.error("Error playing beep sound:", error);
+        }
+      }
+    });
+  </script>
   <script>
     // DOM elements
     const welcomeMessage = document.getElementById('welcome-message');
