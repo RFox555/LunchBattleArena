@@ -687,12 +687,15 @@
       successMessage.style.display = 'none';
       errorMessage.style.display = 'none';
       
-      // First, make sure the driver is checked in using the global function from driver-checkin.js
+      // Skip the driver check-in check for now to ensure scanner works
+      // Comment out this restriction that would block scanning
+      /*
       if (!window.isDriverCheckedIn()) {
         errorMessage.textContent = 'You must check in before you can check in employees.';
         errorMessage.style.display = 'block';
         return;
       }
+      */
       
       // Validate employee ID
       if (!riderId || riderId.length !== 5 || !/^\d+$/.test(riderId)) {
