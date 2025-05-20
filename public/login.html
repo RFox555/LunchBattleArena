@@ -164,8 +164,8 @@
       successMessage.style.display = 'block';
     }
     
-    // Handle form submission
-    loginForm.addEventListener('submit', async function(e) {
+    // Handle form submission using the fixLogin function to ensure consistent behavior
+    loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
       
       // Hide messages
@@ -173,63 +173,12 @@
       successMessage.style.display = 'none';
       
       // Get form data
-      const formData = new FormData(loginForm);
-      const loginData = {
-        username: formData.get('username'),
-        password: formData.get('password'),
-        userType: formData.get('userType')
-      };
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const userType = document.getElementById('userType').value;
       
-      try {
-        // Send login request
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(loginData),
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          // Login successful
-          const user = await response.json();
-          console.log('Login successful:', user);
-          
-          // Show success message before redirecting
-          successMessage.textContent = 'Login successful! Redirecting...';
-          successMessage.style.display = 'block';
-          
-          console.log('Login successful, redirecting based on user type:', user.userType);
-          
-          // Don't verify session, just redirect immediately
-          if (user.userType === 'rider') {
-            console.log('Redirecting to employee dashboard...');
-            // Use replace instead of href to avoid redirect loops
-            window.location.replace('/employee-dashboard.html');
-          } else if (user.userType === 'driver') {
-            console.log('Redirecting to driver checkin page...');
-            // Direct to driver checkin page where drivers start their shift
-            window.location.replace('/driver-checkin.html');
-          } else if (user.userType === 'admin') {
-            console.log('Redirecting to admin dashboard...');
-            window.location.replace('/admin-dashboard.html');
-          } else {
-            console.log('Redirecting to home page...');
-            window.location.replace('/index.html');
-          }
-        } else {
-          // Login failed
-          const error = await response.json();
-          console.error('Login error:', error);
-          errorMessage.textContent = error.message || 'Login failed. Please check your credentials and try again.';
-          errorMessage.style.display = 'block';
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        errorMessage.textContent = 'An error occurred during login. Please try again.';
-        errorMessage.style.display = 'block';
-      }
+      // Use the fixLogin function that's defined in login-fix.js
+      fixLogin(username, password, userType);
     });
   </script>
 </body>

@@ -248,11 +248,19 @@
       
       // Get form data
       const formData = new FormData(registerForm);
+      const userType = formData.get('userType');
+      
+      // Explicitly prevent admin registration - admins are created manually
+      if (userType === 'admin') {
+        showError('Admin accounts cannot be created through registration. Please contact system administrator.');
+        return;
+      }
+      
       const registerData = {
         username: formData.get('username'),
         password: formData.get('password'),
         name: formData.get('name'),
-        userType: formData.get('userType')
+        userType: userType
       };
       
       // Add rider ID for employee accounts

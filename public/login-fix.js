@@ -16,7 +16,9 @@ function fixLogin(username, password, userType) {
     if (response.ok) {
       return response.json();
     } else {
-      throw new Error('Login failed');
+      return response.json().then(errorData => {
+        throw new Error(errorData.message || 'Login failed');
+      });
     }
   })
   .then(user => {
@@ -25,34 +27,50 @@ function fixLogin(username, password, userType) {
     // Create a cookie to track authentication state
     document.cookie = "authenticated=true; path=/";
     
+    // Store known authenticated state for drivers
+    if (userType === 'driver') {
+      sessionStorage.setItem('driverAuthenticated', 'true');
+    }
+    
     // Force direct browser navigation without history manipulation
-    const targetUrl = userType === 'driver' ? '/driver-checkin.html' : '/employee-dashboard.html';
+    let targetUrl;
+    if (userType === 'driver') {
+      targetUrl = '/driver-checkin.html';
+    } else if (userType === 'admin') {
+      targetUrl = '/admin-dashboard.html';
+    } else {
+      targetUrl = '/employee-dashboard.html';
+    }
+    
     console.log('Redirecting to:', targetUrl);
     
     // Add timestamp to prevent caching issues
-    window.location.href = targetUrl + '?t=' + new Date().getTime();
+    window.location.replace(targetUrl + '?t=' + new Date().getTime());
   })
   .catch(err => {
     console.error('Login error:', err);
-    alert('Login failed. Please check credentials and try again.');
+    const errorMessage = document.getElementById('error-message');
+    if (errorMessage) {
+      errorMessage.textContent = err.message || 'Login failed. Please check credentials and try again.';
+      errorMessage.style.display = 'block';
+    } else {
+      alert('Login failed: ' + (err.message || 'Please check your credentials and try again.'));
+    }
   });
 }
 
-// This will be used to automatically log in driver1 when the page loads
-window.onload = function() {
-  // Auto-login for driver1 (for testing purposes)
-  document.getElementById('username').value = 'driver1';
-  document.getElementById('password').value = 'password123';
-  document.getElementById('userType').value = 'driver';
-  
+// Add emergency login button on page load
+window.addEventListener('DOMContentLoaded', function() {
   // Add emergency button
-  const container = document.querySelector('.container');
-  const emergencyBtn = document.createElement('button');
-  emergencyBtn.style.marginTop = '20px';
-  emergencyBtn.style.backgroundColor = '#e11d48';
-  emergencyBtn.textContent = 'Emergency Direct Login';
-  emergencyBtn.onclick = function() {
-    fixLogin('driver1', 'password123', 'driver');
-  };
-  container.appendChild(emergencyBtn);
-};
+  const container = document.querySelector('.login-container');
+  if (container) {
+    const emergencyBtn = document.createElement('button');
+    emergencyBtn.style.marginTop = '20px';
+    emergencyBtn.style.backgroundColor = '#e11d48';
+    emergencyBtn.textContent = 'Emergency Login (Admin)';
+    emergencyBtn.onclick = function() {
+      fixLogin('admin', 'admin123', 'admin');
+    };
+    container.appendChild(emergencyBtn);
+  }
+});
