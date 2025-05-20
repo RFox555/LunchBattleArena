@@ -1,165 +1,165 @@
 /**
- * Driver Scanner - Dedicated QR scanner script for the driver portal
+ * Enhanced QR scanner for driver check-in/employee scanning
+ * Integrates with driver status and properly handles employee check-ins
  */
 
-// DOM Elements
-let startButton;
-let stopButton;
-let manualInput;
-let submitButton;
-let successMessage;
-let errorMessage;
-let tripDetails;
-let tripId;
-let tripEmployee;
-let tripLocation;
-let tripTime;
-let tripNote;
-let tripsContainer;
-let refreshTripsButton;
-let tabs;
-let tabContents;
-
-// Variables
+// Elements
 let html5QrCode = null;
 let isScanning = false;
-let currentUser = null;
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-  console.log("Driver Scanner JS loaded");
+// Process the employee check-in
+async function checkInEmployee(employeeId) {
+  console.log("Checking in employee with ID:", employeeId);
   
-  // Find elements
-  startButton = document.getElementById('startButton');
-  stopButton = document.getElementById('stopButton');
-  manualInput = document.getElementById('manualInput');
-  submitButton = document.getElementById('submitButton');
-  successMessage = document.getElementById('success-message');
-  errorMessage = document.getElementById('error-message');
-  tripDetails = document.getElementById('trip-details');
-  tripId = document.getElementById('trip-id');
-  tripEmployee = document.getElementById('trip-employee');
-  tripLocation = document.getElementById('trip-location');
-  tripTime = document.getElementById('trip-time');
-  tripNote = document.getElementById('trip-note');
-  tripsContainer = document.getElementById('trips-container');
-  refreshTripsButton = document.getElementById('refresh-trips');
-  tabs = document.querySelectorAll('.tab');
-  tabContents = document.querySelectorAll('.tab-content');
+  // Validate driver is checked in
+  const isDriverCheckedIn = window.isDriverCheckedIn ? window.isDriverCheckedIn() : false;
+  if (!isDriverCheckedIn) {
+    showScannerError("You must check in as a driver before you can check in employees.");
+    return;
+  }
   
-  // Create scanner
+  // Validate employee ID
+  if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+    showScannerError("Invalid employee ID. Please scan a valid QR code or enter a 5-digit ID.");
+    return;
+  }
+  
   try {
-    html5QrCode = new Html5Qrcode("reader");
-    console.log("QR scanner created");
-  } catch (error) {
-    console.error("Failed to create QR scanner:", error);
-    showError("Failed to initialize QR scanner");
-  }
-  
-  // Setup button listeners
-  if (startButton) startButton.addEventListener('click', startScanner);
-  if (stopButton) stopButton.addEventListener('click', stopScanner);
-  if (submitButton) {
-    submitButton.addEventListener('click', function() {
-      const id = manualInput.value.trim();
-      if (id) {
-        manualInput.value = '';
-        checkInEmployee(id);
-      } else {
-        showError("Please enter an employee ID");
-      }
-    });
-  }
-  if (refreshTripsButton) {
-    refreshTripsButton.addEventListener('click', fetchRecentCheckIns);
-  }
-  
-  // Setup tabs
-  tabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-      // Remove active class from all tabs
-      tabs.forEach(tab => tab.classList.remove('active'));
-      // Add active class to clicked tab
-      this.classList.add('active');
-      
-      // Hide all tab contents
-      tabContents.forEach(content => content.classList.remove('active'));
-      // Show content for clicked tab
-      const tabId = this.getAttribute('data-tab');
-      document.querySelector(`.tab-content[data-tab="${tabId}"]`).classList.add('active');
-    });
-  });
-  
-  // Get current user
-  getCurrentUser()
-    .then(user => {
-      if (user) {
-        currentUser = user;
-        const driverName = document.getElementById('driver-name');
-        if (driverName) {
-          driverName.textContent = user.name || user.username;
-        }
-        fetchRecentCheckIns();
-      } else {
-        console.error("No user found");
-        showError("Not logged in. Please log in as a driver.");
-        setTimeout(() => {
-          window.location.href = '/login.html';
-        }, 2000);
-      }
-    })
-    .catch(error => {
-      console.error("Error getting current user:", error);
-      showError("Error getting user information");
-    });
-});
-
-// Get current user
-async function getCurrentUser() {
-  try {
-    const response = await fetch('/api/user', {
+    // Clear previous messages
+    hideScannerMessages();
+    
+    // Get current driver location
+    const location = document.getElementById('check-in-location').value || 'Bus Stop';
+    
+    // Prepare the payload
+    const payload = {
+      riderId: employeeId,
+      location: location,
+      note: 'Checked in via QR scan'
+    };
+    
+    // Send the check-in request
+    const response = await fetch('/api/trips', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
       credentials: 'include'
     });
     
-    if (response.ok) {
-      return await response.json();
-    } else {
-      return null;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to check in employee');
     }
+    
+    // Parse the response
+    const trip = await response.json();
+    console.log("Check-in successful:", trip);
+    
+    // Play success sound
+    playSuccessSound();
+    
+    // Show success message
+    showScannerSuccess(`Employee ${employeeId} has been successfully checked in!`);
+    
+    // Display trip details
+    const tripDetails = document.getElementById('trip-details');
+    if (tripDetails) {
+      document.getElementById('trip-id').textContent = trip.id;
+      document.getElementById('trip-employee').textContent = trip.riderId;
+      document.getElementById('trip-location').textContent = trip.location;
+      document.getElementById('trip-time').textContent = new Date(trip.check_in_time || trip.timestamp).toLocaleString();
+      document.getElementById('trip-note').textContent = trip.note || 'No note provided';
+      tripDetails.style.display = 'block';
+    }
+    
+    // Refresh trip history
+    refreshTripHistory();
+    
+    return trip;
   } catch (error) {
-    console.error("Error fetching current user:", error);
+    console.error("Check-in error:", error);
+    showScannerError(`Failed to check in employee: ${error.message}`);
     return null;
   }
 }
 
+// Initialize scanner when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  console.log("Initializing driver scanner");
+  
+  // Find scanner elements
+  const startButton = document.getElementById('start-scan');
+  const stopButton = document.getElementById('stop-scan');
+  const manualInput = document.getElementById('qr-manual-input');
+  const manualSubmit = document.getElementById('qr-manual-submit');
+  
+  // Set up event listeners
+  if (startButton) {
+    startButton.addEventListener('click', startScanner);
+    console.log("Start scanner button initialized");
+  }
+  
+  if (stopButton) {
+    stopButton.addEventListener('click', stopScanner);
+    console.log("Stop scanner button initialized");
+  }
+  
+  if (manualInput && manualSubmit) {
+    manualSubmit.addEventListener('click', function() {
+      const employeeId = manualInput.value.trim();
+      if (employeeId) {
+        manualInput.value = '';
+        checkInEmployee(employeeId);
+      }
+    });
+    console.log("Manual input initialized");
+  }
+  
+  // Initialize scanner on demand to avoid camera permission popups on page load
+  console.log('Driver scanner setup complete');
+});
+
 // Start scanner
 function startScanner() {
-  // Hide any previous messages
-  hideMessages();
-  
+  // Check if driver is checked in
+  const isDriverCheckedIn = window.isDriverCheckedIn ? window.isDriverCheckedIn() : false;
+  if (!isDriverCheckedIn) {
+    showScannerError('You must check in before scanning employee QR codes.');
+    return;
+  }
+
   try {
+    // Clear any previous error
+    hideScannerMessages();
+    
+    // Create scanner if it doesn't exist
+    if (!html5QrCode) {
+      html5QrCode = new Html5Qrcode("reader");
+    }
+    
     // Configure scanner
     const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
     
-    // Start scanner
+    // Start scanning
     html5QrCode.start(
-      { facingMode: "environment" },
+      { facingMode: "environment" }, // Use back camera
       qrConfig,
       onScanSuccess,
-      onScanError
+      onScanFailure
     ).then(() => {
-      // Update UI
+      // Scanner started successfully
       isScanning = true;
-      startButton.style.display = 'none';
-      stopButton.style.display = 'inline-block';
-      console.log("Scanner started");
-    }).catch(error => {
-      console.error("Failed to start scanner:", error);
-      showError("Failed to start scanner. Please check camera permissions.");
+      updateScannerControls(true);
+      console.log("QR scanner started");
+    }).catch(err => {
+      console.error("Failed to start scanner:", err);
+      showScannerError('Failed to start scanner. Please check camera permissions.');
     });
   } catch (error) {
     console.error("Error starting scanner:", error);
-    showError("Error initializing scanner. Please try again.");
+    showScannerError('Error initializing scanner. Please try again.');
   }
 }
 
@@ -167,230 +167,183 @@ function startScanner() {
 function stopScanner() {
   if (html5QrCode && isScanning) {
     html5QrCode.stop().then(() => {
-      // Update UI
       isScanning = false;
-      startButton.style.display = 'inline-block';
-      stopButton.style.display = 'none';
-      console.log("Scanner stopped");
-    }).catch(error => {
-      console.error("Error stopping scanner:", error);
+      updateScannerControls(false);
+      console.log("QR scanner stopped");
+    }).catch(err => {
+      console.error("Error stopping scanner:", err);
     });
   }
 }
 
 // Handle successful scan
 function onScanSuccess(decodedText) {
-  console.log("Successful scan:", decodedText);
+  console.log("QR code scanned:", decodedText);
   
-  // Play beep sound
-  playBeep();
-  
-  // Stop scanner
+  // Stop scanner first
   stopScanner();
   
-  // Process employee ID
+  // Process the scanned code
   checkInEmployee(decodedText.trim());
 }
 
 // Handle scan errors
-function onScanError(error) {
-  // Just log errors, don't show to user
-  console.log("QR scan error:", error);
+function onScanFailure(error) {
+  // Just log the error, don't display it
+  console.log("QR scanning error:", error);
 }
 
-// Check in employee
-async function checkInEmployee(riderId) {
-  // Hide previous messages
-  hideMessages();
+// Function to refresh trip history
+function refreshTripHistory() {
+  const tripsContainer = document.getElementById('trips-container');
+  if (!tripsContainer) return;
   
-  // Validate employee ID
-  if (!riderId || riderId.length !== 5 || !/^\d+$/.test(riderId)) {
-    showError('Invalid employee ID. Please enter a valid 5-digit ID.');
-    return;
-  }
+  // Show loading indicator
+  tripsContainer.innerHTML = '<div class="loading">Loading recent check-ins...</div>';
   
-  let isOnMasterList = true;
-  
-  try {
-    // First check if this ID is on the master list
-    const masterListResponse = await fetch(`/api/master-list/check/${riderId}`);
-    
-    if (masterListResponse.ok) {
-      const masterListData = await masterListResponse.json();
-      isOnMasterList = masterListData.isOnList;
-      
-      // If not on master list, show warning
-      if (!isOnMasterList) {
-        showError(`WARNING: Employee ID ${riderId} is NOT on the approved master list! You can still check them in, but this may need review.`);
-        // Wait 2 seconds to make sure the warning is seen
-        await new Promise(resolve => setTimeout(resolve, 2000));
+  // Fetch recent trips
+  fetch('/api/trips/recent?limit=10')
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to fetch recent trips');
+      return response.json();
+    })
+    .then(trips => {
+      if (trips.length === 0) {
+        tripsContainer.innerHTML = '<div class="no-trips">No recent check-ins found.</div>';
+        return;
       }
-    }
-  } catch (error) {
-    console.error("Error checking master list:", error);
-    // Continue with check-in even if master list check fails
-  }
-  
-  // Prepare check-in data
-  const checkInData = {
-    riderId,
-    location: 'Bus Stop',
-    note: isOnMasterList ? 'Checked in by driver' : 'Checked in by driver - NOT ON MASTER LIST'
-  };
-  
-  try {
-    // Send API request
-    const response = await fetch('/api/trips', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(checkInData),
-      credentials: 'include'
+      
+      // Create table
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Employee</th>
+              <th>Location</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Add trips
+      trips.forEach(trip => {
+        const date = new Date(trip.check_in_time || trip.timestamp);
+        html += `
+          <tr>
+            <td>${trip.id}</td>
+            <td>${trip.riderId}</td>
+            <td>${trip.location}</td>
+            <td>${date.toLocaleString()}</td>
+            <td>${trip.completed ? 'Completed' : 'Active'}</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+          </tbody>
+        </table>
+      `;
+      
+      tripsContainer.innerHTML = html;
+    })
+    .catch(error => {
+      console.error('Error fetching trips:', error);
+      tripsContainer.innerHTML = `<div class="error">Failed to load trip history: ${error.message}</div>`;
     });
-    
-    if (response.ok) {
-      // Success
-      const trip = await response.json();
-      console.log('Check-in successful:', trip);
-      
-      // Show appropriate success message
-      if (!isOnMasterList) {
-        showSuccess(`Employee ${trip.riderId} checked in, but they are NOT on the approved master list.`);
-      } else {
-        showSuccess(`Employee ${trip.riderId} has been successfully checked in!`);
-      }
-      
-      // Update trip details
-      tripId.textContent = trip.id;
-      tripEmployee.textContent = trip.riderId;
-      tripLocation.textContent = trip.location;
-      tripTime.textContent = formatDateTime(trip.timestamp || trip.check_in_time);
-      tripNote.textContent = trip.note || 'No note provided';
-      
-      // Show trip details
-      tripDetails.style.display = 'block';
-      
-      // Refresh recent check-ins
-      fetchRecentCheckIns();
-    } else {
-      // API error
-      const errorData = await response.json();
-      console.error('Check-in failed:', errorData);
-      
-      // Show error message
-      showError(errorData.message || 'Failed to check in employee. Please try again.');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showError('An error occurred. Please check your connection and try again.');
+}
+
+// Play success sound
+function playSuccessSound() {
+  const successSound = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
+  successSound.play();
+}
+
+// Update scanner controls
+function updateScannerControls(isStarted) {
+  const startButton = document.getElementById('start-scan');
+  const stopButton = document.getElementById('stop-scan');
+  
+  if (startButton && stopButton) {
+    startButton.style.display = isStarted ? 'none' : 'inline-block';
+    stopButton.style.display = isStarted ? 'inline-block' : 'none';
   }
 }
 
-// Fetch recent check-ins
-async function fetchRecentCheckIns() {
-  if (!currentUser) {
-    console.error("No current user for check-ins");
-    return;
-  }
-  
-  try {
-    tripsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">Loading check-ins...</div>';
-    
-    const response = await fetch('/api/trips/recent?limit=10', {
-      credentials: 'include'
-    });
-    
-    if (response.ok) {
-      const trips = await response.json();
-      renderTripHistory(trips);
-    } else {
-      console.error('Failed to fetch recent check-ins:', await response.text());
-      tripsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">Failed to load recent check-ins</div>';
-    }
-  } catch (error) {
-    console.error('Error fetching recent check-ins:', error);
-    tripsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">Failed to load recent check-ins</div>';
+// Show error message
+function showScannerError(message) {
+  const errorElement = document.getElementById('error-message');
+  if (errorElement) {
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
   }
 }
 
 // Show success message
-function showSuccess(message) {
-  successMessage.textContent = message;
-  successMessage.style.display = 'block';
-  errorMessage.style.display = 'none';
-}
-
-// Show error message
-function showError(message) {
-  errorMessage.textContent = message;
-  errorMessage.style.display = 'block';
-  successMessage.style.display = 'none';
-}
-
-// Hide messages
-function hideMessages() {
-  successMessage.style.display = 'none';
-  errorMessage.style.display = 'none';
-}
-
-// Play beep sound
-function playBeep() {
-  try {
-    const beep = new Audio('data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACFhYWFhYWFhYWFhYWFhYWFhYWFvb29vb29vb29vb29vb29vb29vb3f39/f39/f39/f39/f39/f39/f3////////////////wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCkAAAAAAAAAZQOGZkbgAAAAAAAAAAAAAAAAD/+xDEAAAHMAN/tAAAIgZIb/Z4ABIEAAFYIAAT8ogAAhHxQQEBAQE3d3cRI3cQEMuBAQx3EBAQEiIAAAAAAAxn///+AgICAgRERERERIiIiIiJVVVVVVV3d3d3d3e7u7u7u7vd3d3d3d4AAAABAQAQCBAAAAAAAAAAAAAAAAA=');
-    beep.play();
-  } catch (error) {
-    console.error("Error playing beep:", error);
+function showScannerSuccess(message) {
+  const successElement = document.getElementById('success-message');
+  if (successElement) {
+    successElement.textContent = message;
+    successElement.style.display = 'block';
   }
 }
 
-// Format date and time
-function formatDateTime(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleString();
-}
-
-// Render trip history
-function renderTripHistory(trips) {
-  if (!trips || trips.length === 0) {
-    tripsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">No recent check-ins found</div>';
-    return;
+// Hide all scanner messages
+function hideScannerMessages() {
+  const errorElement = document.getElementById('error-message');
+  const successElement = document.getElementById('success-message');
+  
+  if (errorElement) {
+    errorElement.style.display = 'none';
   }
   
-  // Create table
-  const table = document.createElement('table');
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Date & Time</th>
-        <th>Employee ID</th>
-        <th>Location</th>
-        <th>Note</th>
-      </tr>
-    </thead>
-    <tbody id="trip-list"></tbody>
-  `;
-  
-  const tripList = table.querySelector('#trip-list');
-  
-  // Add rows for each trip
-  trips.forEach(trip => {
-    const row = document.createElement('tr');
-    
-    // Determine timestamp field (compatibility with both formats)
-    const timestamp = trip.timestamp || trip.check_in_time;
-    
-    row.innerHTML = `
-      <td>${formatDateTime(timestamp)}</td>
-      <td>${trip.riderId}</td>
-      <td>${trip.location || 'Not specified'}</td>
-      <td>${trip.note || 'No note'}</td>
-    `;
-    
-    tripList.appendChild(row);
-  });
-  
-  // Update container
-  tripsContainer.innerHTML = '';
-  tripsContainer.appendChild(table);
+  if (successElement) {
+    successElement.style.display = 'none';
+  }
 }
+
+// For compatibility with driver check-in system
+function enableQrScanner() {
+  // Enable scanner controls
+  const startButton = document.getElementById('start-scan');
+  if (startButton) {
+    startButton.disabled = false;
+  }
+  
+  // Update availability message
+  const scannerAvailability = document.getElementById('scanner-availability');
+  if (scannerAvailability) {
+    scannerAvailability.textContent = 'QR scanner is active. You can now scan employee IDs.';
+    scannerAvailability.className = 'scanner-active';
+  }
+}
+
+function disableQrScanner() {
+  // First stop the scanner if it's running
+  if (isScanning) {
+    stopScanner();
+  }
+  
+  // Disable scanner controls
+  const startButton = document.getElementById('start-scan');
+  if (startButton) {
+    startButton.disabled = true;
+  }
+  
+  // Update availability message
+  const scannerAvailability = document.getElementById('scanner-availability');
+  if (scannerAvailability) {
+    scannerAvailability.textContent = 'QR scanner is inactive. Please check in to activate the scanner.';
+    scannerAvailability.className = 'scanner-inactive';
+  }
+}
+
+// Export functions for global access
+window.startScanner = startScanner;
+window.stopScanner = stopScanner;
+window.enableQrScanner = enableQrScanner;
+window.disableQrScanner = disableQrScanner;
+window.checkInEmployee = checkInEmployee;
+window.refreshTripHistory = refreshTripHistory;
