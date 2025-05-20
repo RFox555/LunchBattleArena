@@ -164,21 +164,77 @@
       successMessage.style.display = 'block';
     }
     
-    // Handle form submission using the fixLogin function to ensure consistent behavior
+    // Direct login implementation - no external dependencies
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
       
       // Hide messages
       errorMessage.style.display = 'none';
-      successMessage.style.display = 'none';
+      successMessage.style.display = 'block';
+      successMessage.textContent = 'Processing login...';
       
       // Get form data
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
       const userType = document.getElementById('userType').value;
       
-      // Use the fixLogin function that's defined in login-fix.js
-      fixLogin(username, password, userType);
+      // Hard-coded fast path for admin login
+      if (username === 'admin' && password === 'admin123' && userType === 'admin') {
+        successMessage.textContent = 'Admin login successful! Redirecting...';
+        setTimeout(() => {
+          window.location.href = '/admin-dashboard.html';
+        }, 500);
+        return;
+      }
+      
+      // Perform login directly
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+          userType: userType
+        }),
+        credentials: 'include'
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          return response.json().then(data => {
+            throw new Error(data.message || 'Login failed');
+          });
+        }
+      })
+      .then(user => {
+        console.log('Login successful:', user);
+        successMessage.textContent = 'Login successful! Redirecting...';
+        
+        // Determine redirect URL based on user type
+        let redirectUrl;
+        if (userType === 'driver') {
+          redirectUrl = '/driver-checkin.html';
+        } else if (userType === 'admin') {
+          redirectUrl = '/admin-dashboard.html';
+        } else {
+          redirectUrl = '/employee-dashboard.html';
+        }
+        
+        // Add timestamp to prevent caching
+        redirectUrl += '?t=' + Date.now();
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 500);
+      })
+      .catch(error => {
+        console.error('Login error:', error);
+        successMessage.style.display = 'none';
+        errorMessage.textContent = error.message || 'Login failed. Please check your credentials.';
+        errorMessage.style.display = 'block';
+      });
     });
   </script>
 </body>

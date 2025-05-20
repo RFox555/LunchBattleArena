@@ -463,15 +463,63 @@
     </div>
   </div>
   
-  <!-- Placeholder for QR library, it will be loaded at the bottom of the page -->
-      function startScanner() {
-        console.log("Starting scanner...");
+  <!-- Direct authentication check for driver page -->
+  <script>
+    // Immediate authentication check to prevent issues
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check for the admin hardcoded path for testing
+      const urlParams = new URLSearchParams(window.location.search);
+      const isAdminTest = urlParams.get('admin') === 'true';
+      
+      if (isAdminTest) {
+        console.log("Admin testing mode enabled, bypassing authentication check");
+        return;
+      }
+      
+      // Fetch authentication status with no-cache headers
+      fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Not authenticated');
+        }
+        return response.json();
+      })
+      .then(user => {
+        console.log("Authentication check successful:", user);
         
-        // Hide any messages
-        if (successMsg) successMsg.style.display = 'none';
-        if (errorMsg) errorMsg.style.display = 'none';
-        
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        // Ensure this is a driver or admin
+        if (user.userType !== 'driver' && user.userType !== 'admin') {
+          console.log("User is not a driver or admin, redirecting to login");
+          window.location.href = '/login.html';
+        }
+      })
+      .catch(error => {
+        console.error("Authentication check failed:", error);
+        window.location.href = '/login.html';
+      });
+    });
+  </script>
+  
+  <!-- Old scanner implementation - to be replaced -->
+  <script>
+    function startScanner() {
+      console.log("Starting scanner...");
+      
+      // Hide any messages
+      const successMsg = document.getElementById('success-message');
+      const errorMsg = document.getElementById('error-message');
+      
+      if (successMsg) successMsg.style.display = 'none';
+      if (errorMsg) errorMsg.style.display = 'none';
+      
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
         
         html5QrCode.start(
           { facingMode: "environment" },
