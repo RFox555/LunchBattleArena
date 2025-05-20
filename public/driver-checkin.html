@@ -463,47 +463,47 @@
     </div>
   </div>
   
-  <!-- Direct authentication check for driver page -->
+  <!-- Load direct authentication system and verify user credentials -->
+  <script src="/direct-login.js"></script>
   <script>
-    // Immediate authentication check to prevent issues
+    // Verify driver access immediately to prevent redirect loops
     document.addEventListener('DOMContentLoaded', function() {
-      // Check for the admin hardcoded path for testing
-      const urlParams = new URLSearchParams(window.location.search);
-      const isAdminTest = urlParams.get('admin') === 'true';
+      console.log("Driver check-in page loaded, verifying access...");
       
-      if (isAdminTest) {
-        console.log("Admin testing mode enabled, bypassing authentication check");
+      // Check for bypass parameter for testing
+      const urlParams = new URLSearchParams(window.location.search);
+      const bypass = urlParams.get('bypass') === 'true';
+      
+      if (bypass) {
+        console.log("Access verification bypassed via URL parameter");
         return;
       }
       
-      // Fetch authentication status with no-cache headers
-      fetch('/api/auth/me', {
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Not authenticated');
-        }
-        return response.json();
-      })
-      .then(user => {
-        console.log("Authentication check successful:", user);
-        
-        // Ensure this is a driver or admin
-        if (user.userType !== 'driver' && user.userType !== 'admin') {
-          console.log("User is not a driver or admin, redirecting to login");
-          window.location.href = '/login.html';
-        }
-      })
-      .catch(error => {
-        console.error("Authentication check failed:", error);
+      // Check if user is authenticated
+      const user = checkAuth();
+      if (!user) {
+        console.log("Not authenticated, redirecting to login");
         window.location.href = '/login.html';
-      });
+        return;
+      }
+      
+      // Check if user is a driver or admin
+      if (user.userType !== 'driver' && user.userType !== 'admin') {
+        console.log("User is not a driver or admin:", user.userType);
+        alert("This page is for drivers only. You will be redirected to the login page.");
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      console.log("Access verified for:", user.username, "(", user.userType, ")");
+      
+      // Set up logout button
+      const logoutButton = document.getElementById('logout-button');
+      if (logoutButton) {
+        logoutButton.addEventListener('click', function() {
+          logout();
+        });
+      }
     });
   </script>
   
