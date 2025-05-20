@@ -108,11 +108,22 @@ function setupEventListeners() {
 // Get the current authenticated user
 async function getCurrentUser() {
   try {
-    const response = await fetch('/api/auth/me');
+    // Add no-cache headers to prevent caching issues
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include', // Always include credentials
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
     if (!response.ok) {
       throw new Error('Not authenticated');
     }
+    
     const user = await response.json();
+    console.log('Current user fetched successfully:', user);
     return user;
   } catch (error) {
     console.error('Error getting current user:', error);

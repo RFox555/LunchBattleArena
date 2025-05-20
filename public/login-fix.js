@@ -40,9 +40,14 @@ function fixLogin(username, password, userType) {
     // Store authentication state
     document.cookie = "authenticated=true; path=/";
     
-    // Store driver authentication state if applicable
+    // Set proper authentication in session storage
     if (userType === 'driver') {
+      // This helps prevent redirect loops with driver pages
       sessionStorage.setItem('driverAuthenticated', 'true');
+      // Store driver ID for quick access
+      if (user && user.id) {
+        sessionStorage.setItem('driverId', user.id.toString());
+      }
     }
     
     // Show success message
