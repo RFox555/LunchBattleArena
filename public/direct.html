@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Access - Transportation System</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+    h1 {
+      color: #2563eb;
+      margin-top: 0;
+    }
+    .btn-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin: 25px 0;
+    }
+    .btn {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 15px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #1d4ed8;
+    }
+    .admin-btn {
+      background-color: #e11d48;
+    }
+    .admin-btn:hover {
+      background-color: #be123c;
+    }
+    .driver-btn {
+      background-color: #0d9488;
+    }
+    .driver-btn:hover {
+      background-color: #0f766e;
+    }
+    .employee-btn {
+      background-color: #8b5cf6;
+    }
+    .employee-btn:hover {
+      background-color: #7c3aed;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Transportation Tracking System</h1>
+    <p>Direct Access Links</p>
+    
+    <div class="btn-container">
+      <button id="admin-btn" class="btn admin-btn">Admin Dashboard</button>
+      <button id="driver-btn" class="btn driver-btn">Driver Check-In</button>
+      <button id="employee-btn" class="btn employee-btn">Employee Dashboard</button>
+    </div>
+    
+    <div class="footer">
+      <p>This page provides direct access to the system without login requirements.</p>
+      <p><a href="/login.html">Return to normal login page</a></p>
+    </div>
+  </div>
+
+  <script>
+    // Direct access buttons
+    document.getElementById('admin-btn').addEventListener('click', function() {
+      // Create a direct login form and submit it
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/auth/login';
+      
+      // Admin credentials
+      const username = document.createElement('input');
+      username.type = 'hidden';
+      username.name = 'username';
+      username.value = 'admin';
+      
+      const password = document.createElement('input');
+      password.type = 'hidden';
+      password.name = 'password';
+      password.value = 'admin123';
+      
+      const userType = document.createElement('input');
+      userType.type = 'hidden';
+      userType.name = 'userType';
+      userType.value = 'admin';
+      
+      // Add inputs to form
+      form.appendChild(username);
+      form.appendChild(password);
+      form.appendChild(userType);
+      
+      // Add form to document and submit
+      document.body.appendChild(form);
+      form.submit();
+    });
+
+    document.getElementById('driver-btn').addEventListener('click', function() {
+      // Create a direct login form and submit it
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/auth/login';
+      
+      // Driver credentials
+      const username = document.createElement('input');
+      username.type = 'hidden';
+      username.name = 'username';
+      username.value = '21054'; // Driver username
+      
+      const password = document.createElement('input');
+      password.type = 'hidden';
+      password.name = 'password';
+      password.value = 'password'; // Driver password
+      
+      const userType = document.createElement('input');
+      userType.type = 'hidden';
+      userType.name = 'userType';
+      userType.value = 'driver';
+      
+      // Add inputs to form
+      form.appendChild(username);
+      form.appendChild(password);
+      form.appendChild(userType);
+      
+      // Add form to document and submit
+      document.body.appendChild(form);
+      form.submit();
+    });
+
+    document.getElementById('employee-btn').addEventListener('click', function() {
+      // Create a direct login form and submit it
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/auth/login';
+      
+      // Employee credentials
+      const username = document.createElement('input');
+      username.type = 'hidden';
+      username.name = 'username';
+      username.value = '21053'; // Employee username
+      
+      const password = document.createElement('input');
+      password.type = 'hidden';
+      password.name = 'password';
+      password.value = 'password'; // Employee password
+      
+      const userType = document.createElement('input');
+      userType.type = 'hidden';
+      userType.name = 'userType';
+      userType.value = 'rider';
+      
+      // Add inputs to form
+      form.appendChild(username);
+      form.appendChild(password);
+      form.appendChild(userType);
+      
+      // Add form to document and submit
+      document.body.appendChild(form);
+      form.submit();
+    });
+  </script>
+</body>
+</html>

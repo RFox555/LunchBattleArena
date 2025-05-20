@@ -36,7 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     session({
       secret: process.env.SESSION_SECRET || "transportation-tracking-system-secret",
       resave: true,
-      saveUninitialized: false, // Changed to false to avoid creating empty sessions
+      saveUninitialized: true, // Changed to true to ensure sessions are always created
       rolling: true, // Reset expiration counter on every response
       cookie: { 
         secure: false, // Set to false for both dev and prod to ensure cookies work
