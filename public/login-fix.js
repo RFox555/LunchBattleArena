@@ -1,5 +1,18 @@
-// Direct fix for login redirect issue
+// Enhanced login handling for improved reliability
 function fixLogin(username, password, userType) {
+  // Clear any existing messages
+  const errorMessage = document.getElementById('error-message');
+  const successMessage = document.getElementById('success-message');
+  
+  if (errorMessage) errorMessage.style.display = 'none';
+  if (successMessage) successMessage.style.display = 'none';
+  
+  // Show login is processing
+  if (successMessage) {
+    successMessage.textContent = 'Processing login...';
+    successMessage.style.display = 'block';
+  }
+  
   fetch('/api/auth/login', {
     method: 'POST',
     headers: {
@@ -17,22 +30,28 @@ function fixLogin(username, password, userType) {
       return response.json();
     } else {
       return response.json().then(errorData => {
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Invalid username or password');
       });
     }
   })
   .then(user => {
     console.log('Login successful:', user);
     
-    // Create a cookie to track authentication state
+    // Store authentication state
     document.cookie = "authenticated=true; path=/";
     
-    // Store known authenticated state for drivers
+    // Store driver authentication state if applicable
     if (userType === 'driver') {
       sessionStorage.setItem('driverAuthenticated', 'true');
     }
     
-    // Force direct browser navigation without history manipulation
+    // Show success message
+    if (successMessage) {
+      successMessage.textContent = 'Login successful! Redirecting...';
+      successMessage.style.display = 'block';
+    }
+    
+    // Determine the appropriate redirect URL based on user type
     let targetUrl;
     if (userType === 'driver') {
       targetUrl = '/driver-checkin.html';
@@ -44,33 +63,25 @@ function fixLogin(username, password, userType) {
     
     console.log('Redirecting to:', targetUrl);
     
-    // Add timestamp to prevent caching issues
-    window.location.replace(targetUrl + '?t=' + new Date().getTime());
+    // Redirect with a small delay to allow the user to see the success message
+    setTimeout(() => {
+      window.location.replace(targetUrl + '?t=' + new Date().getTime());
+    }, 800);
   })
   .catch(err => {
     console.error('Login error:', err);
-    const errorMessage = document.getElementById('error-message');
+    
+    // Hide success message if visible
+    if (successMessage) {
+      successMessage.style.display = 'none';
+    }
+    
+    // Show error message
     if (errorMessage) {
-      errorMessage.textContent = err.message || 'Login failed. Please check credentials and try again.';
+      errorMessage.textContent = err.message || 'Login failed. Please check your credentials.';
       errorMessage.style.display = 'block';
     } else {
-      alert('Login failed: ' + (err.message || 'Please check your credentials and try again.'));
+      alert('Login failed: ' + (err.message || 'Please check your credentials.'));
     }
   });
 }
-
-// Add emergency login button on page load
-window.addEventListener('DOMContentLoaded', function() {
-  // Add emergency button
-  const container = document.querySelector('.login-container');
-  if (container) {
-    const emergencyBtn = document.createElement('button');
-    emergencyBtn.style.marginTop = '20px';
-    emergencyBtn.style.backgroundColor = '#e11d48';
-    emergencyBtn.textContent = 'Emergency Login (Admin)';
-    emergencyBtn.onclick = function() {
-      fixLogin('admin', 'admin123', 'admin');
-    };
-    container.appendChild(emergencyBtn);
-  }
-});

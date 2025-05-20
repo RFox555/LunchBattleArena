@@ -463,45 +463,7 @@
     </div>
   </div>
   
-  <script src="/js/html5-qrcode.min.js"></script>
-  <!-- Direct QR Scanner Implementation -->
-  <script>
-    // This is a simple, direct implementation of the QR scanner
-    document.addEventListener('DOMContentLoaded', function() {
-      const startScanBtn = document.getElementById('start-scan');
-      const stopScanBtn = document.getElementById('stop-scan');
-      const manualInput = document.getElementById('qr-manual-input');
-      const manualSubmitBtn = document.getElementById('qr-manual-submit');
-      const successMsg = document.getElementById('success-message');
-      const errorMsg = document.getElementById('error-message');
-      const tripDetails = document.getElementById('trip-details');
-      
-      // Scanner variables
-      let html5QrCode;
-      let isScanning = false;
-      
-      // Initialize scanner
-      try {
-        html5QrCode = new Html5Qrcode("reader");
-        console.log("QR Scanner initialized");
-      } catch (error) {
-        console.error("Failed to initialize scanner:", error);
-      }
-      
-      // Set up event listeners
-      if (startScanBtn) startScanBtn.addEventListener('click', startScanner);
-      if (stopScanBtn) stopScanBtn.addEventListener('click', stopScanner);
-      if (manualSubmitBtn && manualInput) {
-        manualSubmitBtn.addEventListener('click', function() {
-          const employeeId = manualInput.value.trim();
-          if (employeeId) {
-            processEmployeeId(employeeId);
-            manualInput.value = '';
-          }
-        });
-      }
-      
-      // Start scanner
+  <!-- Placeholder for QR library, it will be loaded at the bottom of the page -->
       function startScanner() {
         console.log("Starting scanner...");
         
@@ -1437,6 +1399,6 @@
   <script src="/js/html5-qrcode.min.js"></script>
   <script src="/js/driver-checkin.js"></script>
   <script src="/js/driver-location.js"></script>
-  <script src="/js/standalone-scanner.js"></script>
+  <script src="/js/qr-fix.js"></script>
 </body>
 </html>
