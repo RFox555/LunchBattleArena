@@ -18,13 +18,19 @@ window.driverStatus = {
 
 // Initialize driver check-in functionality
 function initDriverCheckin() {
+  // Clear any previous authentication markers that might be stale
+  const isFirstLoad = !window.driverPageLoaded;
+  window.driverPageLoaded = true;
+  
+  // Check URL parameters for debugging
+  const urlParams = new URLSearchParams(window.location.search);
+  const debug = urlParams.get('debug') === 'true';
+  
   // Get the current user's information
   getCurrentUser()
     .then(user => {
-      if (user && user.userType === 'driver') {
-        // Store known authenticated driver in sessionStorage to prevent redirect loops
-        sessionStorage.setItem('driverAuthenticated', 'true');
-        
+      if (user && (user.userType === 'driver' || user.userType === 'admin')) {
+        // Store the current driver ID
         currentDriverId = user.id;
         document.getElementById('driver-name').textContent = user.name;
         
@@ -33,27 +39,35 @@ function initDriverCheckin() {
         
         // Set up event listeners
         setupEventListeners();
+        
+        console.log("Driver check-in initialized for:", user.name);
       } else {
-        // Only redirect if we haven't just come from login
-        if (!sessionStorage.getItem('driverAuthenticated')) {
-          showError('Error: Only drivers can access this page. Please log in as a driver.');
-          // Redirect to login after 3 seconds
-          setTimeout(() => {
-            window.location.replace('/login.html');
-          }, 3000);
+        // Not a driver or admin, redirect to login
+        console.log("Not a driver, user type:", user ? user.userType : "unknown");
+        
+        if (debug) {
+          // In debug mode, show error but don't redirect
+          showError('Debug mode: This user is not a driver. Normal mode would redirect to login.');
+        } else {
+          showError('This page is for drivers only. Redirecting to login...');
+          
+          // Redirect immediately
+          window.location.replace('/login.html');
         }
       }
     })
     .catch(error => {
       console.error('Error fetching current user:', error);
       
-      // Only redirect if we haven't just come from login
-      if (!sessionStorage.getItem('driverAuthenticated')) {
-        showError('Error: Could not authenticate. Please log in again.');
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          window.location.replace('/login.html');
-        }, 3000);
+      if (debug) {
+        // In debug mode, show error but don't redirect
+        showError('Debug mode: Authentication error. Normal mode would redirect to login.');
+      } else {
+        // Authentication error, redirect to login 
+        showError('Authentication error. Redirecting to login...');
+        
+        // Redirect immediately - no delay
+        window.location.replace('/login.html');
       }
     });
 }

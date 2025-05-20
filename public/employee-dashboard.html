@@ -274,10 +274,11 @@
         currentUser = await response.json();
         console.log('Authentication successful:', currentUser);
         
-        // Make sure the user is an employee (user type is still 'rider' in the database)
-        if (currentUser.userType !== 'rider') {
-          alert('This page is for employees only');
-          window.location.href = '/index.html';
+        // Accept both 'rider' (employee) and 'admin' user types 
+        // This allows easier testing and debugging by admin accounts
+        if (currentUser.userType !== 'rider' && currentUser.userType !== 'admin') {
+          console.log("Redirecting - user type is:", currentUser.userType);
+          window.location.replace('/login.html');
           return;
         }
         
