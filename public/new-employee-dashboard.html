@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Dashboard - Transportation Tracking</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin: 0;
+      color: #2563eb;
+      font-size: 24px;
+    }
+    .logout-button {
+      background-color: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .welcome {
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    .qr-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    #qrcode {
+      margin: 20px auto;
+      display: inline-block;
+    }
+    .employee-id {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2563eb;
+      margin: 10px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th {
+      text-align: left;
+      border-bottom: 2px solid #e5e7eb;
+      padding: 10px 15px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .no-trips {
+      text-align: center;
+      padding: 20px;
+      color: #6b7280;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Employee Dashboard</h1>
+      <button id="logout-button" class="logout-button">Logout</button>
+    </header>
+
+    <div class="card">
+      <div id="welcome-message" class="welcome">Welcome!</div>
+      
+      <div class="qr-container">
+        <h3>Your QR Code</h3>
+        <div id="qrcode"></div>
+        <div class="employee-id" id="employee-id">Loading...</div>
+        <p>Show this QR code to drivers for check-in</p>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>Recent Trips</h2>
+      <div id="trips-container">
+        <div class="no-trips">Loading trips...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script>
+    let currentUser = null;
+
+    // Check authentication immediately
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuth();
+    });
+
+    function checkAuth() {
+      // Get user from sessionStorage
+      const userStr = sessionStorage.getItem('currentUser');
+      if (!userStr) {
+        window.location.href = '/new-login.html';
+        return;
+      }
+
+      try {
+        currentUser = JSON.parse(userStr);
+        
+        // Allow both employees (rider) and admins
+        if (currentUser.userType !== 'rider' && currentUser.userType !== 'admin') {
+          alert('Access denied. This page is for employees only.');
+          window.location.href = '/new-login.html';
+          return;
+        }
+
+        // Initialize the dashboard
+        initializeDashboard();
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        window.location.href = '/new-login.html';
+      }
+    }
+
+    function initializeDashboard() {
+      // Update welcome message
+      document.getElementById('welcome-message').textContent = `Welcome, ${currentUser.name || currentUser.username}!`;
+      
+      // Generate QR code
+      if (currentUser.riderId) {
+        generateQrCode(currentUser.riderId);
+      } else {
+        document.getElementById('employee-id').textContent = 'No Employee ID found';
+      }
+      
+      // Load trip history
+      loadTripHistory();
+      
+      // Set up logout button
+      document.getElementById('logout-button').addEventListener('click', logout);
+    }
+
+    function generateQrCode(employeeId) {
+      document.getElementById('employee-id').textContent = employeeId;
+      
+      QRCode.toCanvas(employeeId, {
+        width: 200,
+        height: 200,
+        color: {
+          dark: "#000000",
+          light: "#ffffff"
+        }
+      }, function(error, canvas) {
+        if (error) {
+          console.error('QR Code generation failed:', error);
+          document.getElementById('qrcode').innerHTML = '<p>QR Code generation failed</p>';
+        } else {
+          document.getElementById('qrcode').innerHTML = '';
+          document.getElementById('qrcode').appendChild(canvas);
+        }
+      });
+    }
+
+    function loadTripHistory() {
+      fetch('/api/trips', {
+        credentials: 'include'
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Failed to load trips');
+      })
+      .then(trips => {
+        renderTripHistory(trips);
+      })
+      .catch(error => {
+        console.error('Error loading trips:', error);
+        document.getElementById('trips-container').innerHTML = '<div class="no-trips">Failed to load trip history</div>';
+      });
+    }
+
+    function renderTripHistory(trips) {
+      const container = document.getElementById('trips-container');
+      
+      if (!trips || trips.length === 0) {
+        container.innerHTML = '<div class="no-trips">No trips found</div>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Location</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+
+      const tbody = table.querySelector('tbody');
+      trips.forEach(trip => {
+        const row = document.createElement('tr');
+        const date = new Date(trip.check_in_time || trip.timestamp);
+        row.innerHTML = `
+          <td>${date.toLocaleString()}</td>
+          <td>${trip.location}</td>
+          <td>${trip.note || '-'}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      container.innerHTML = '';
+      container.appendChild(table);
+    }
+
+    function logout() {
+      // Clear session storage
+      sessionStorage.removeItem('currentUser');
+      
+      // Call logout API
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      }).then(() => {
+        window.location.href = '/new-login.html';
+      }).catch(() => {
+        window.location.href = '/new-login.html';
+      });
+    }
+  </script>
+</body>
+</html>
