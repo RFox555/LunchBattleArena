@@ -1,197 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Kout Food Transportation Tracking</title>
-  <!-- Ensure HTML extension -->
-  <script src="/js/ensure-extension.js"></script>
-  <link rel="stylesheet" href="/css/kout-styles.css">
+  <title>Login</title>
   <style>
-    body {
-      background-color: #f7f7f7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .login-container {
-      max-width: 420px;
-      width: 100%;
-      padding: 30px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .logo-container {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .logo-container img {
-      max-width: 200px;
-      height: auto;
-    }
-    h1 {
-      text-align: center;
-      color: var(--kout-dark);
-      margin-top: 0;
-      font-size: 28px;
-      margin-bottom: 25px;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: var(--kout-dark);
-    }
-    input, select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 16px;
-      box-sizing: border-box;
-      transition: border-color 0.3s;
-    }
-    input:focus, select:focus {
-      border-color: var(--kout-red);
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(227, 36, 33, 0.2);
-    }
-    button {
-      background-color: var(--kout-red);
-      color: white;
-      border: none;
-      padding: 14px 20px;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      width: 100%;
-      font-weight: bold;
-      margin-top: 15px;
-      transition: background-color 0.3s;
-    }
-    button:hover {
-      background-color: #c61e1a;
-    }
-    .error-message {
-      background-color: #fee2e2;
-      border: 1px solid #fca5a5;
-      color: #b91c1c;
-      padding: 15px;
-      border-radius: 6px;
-      margin-top: 20px;
-      display: none;
-    }
-    .success-message {
-      background-color: #dcfce7;
-      border: 1px solid #86efac;
-      color: #166534;
-      padding: 15px;
-      border-radius: 6px;
-      margin-top: 20px;
-      display: none;
-    }
-    .register-link {
-      text-align: center;
-      margin-top: 25px;
-      font-size: 15px;
-      color: var(--kout-gray);
-    }
-    .register-link a {
-      color: var(--kout-red);
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .register-link a:hover {
-      text-decoration: underline;
-    }
+    body { font-family: Arial; margin: 50px; }
+    .form { max-width: 400px; margin: 0 auto; }
+    input, select { width: 100%; padding: 10px; margin: 10px 0; }
+    button { width: 100%; padding: 15px; background: #007bff; color: white; border: none; }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="logo-container">
-      <img src="/images/kout-logo.jpg" alt="Kout Food Group">
-    </div>
-    <h1>Transportation Tracking Login</h1>
-    
-    <form id="login-form">
-      <div class="form-group">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-      </div>
-      
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      
-      <div class="form-group">
-        <label for="userType">Account Type:</label>
-        <select id="userType" name="userType" required>
-          <option value="rider">Employee</option>
-          <option value="driver">Driver</option>
-          <option value="admin">Administrator</option>
-        </select>
-      </div>
-      
-      <button type="submit">Login</button>
-    </form>
-    
-    <div id="error-message" class="error-message"></div>
-    <div id="success-message" class="success-message"></div>
-    
-    <div class="register-link">
-      Don't have an account? <a href="/register.html">Register</a>
-    </div>
+  <div class="form">
+    <h2>Login</h2>
+    <input type="text" id="user" placeholder="Username" value="admin">
+    <input type="password" id="pass" placeholder="Password" value="admin123">
+    <select id="type">
+      <option value="admin">Admin</option>
+      <option value="driver">Driver</option>
+      <option value="rider">Employee</option>
+    </select>
+    <button onclick="login()">Login</button>
+    <div id="msg"></div>
   </div>
   
-  <!-- Include our reliable direct login script -->
-  <script src="/direct-login.js"></script>
   <script>
-    // DOM Elements
-    const loginForm = document.getElementById('login-form');
-    const errorMessage = document.getElementById('error-message');
-    const successMessage = document.getElementById('success-message');
-    
-    // Check if already logged in, redirect if so
-    const user = checkAuth();
-    if (user) {
-      console.log('User already logged in:', user);
+    function login() {
+      const user = document.getElementById('user').value;
+      const pass = document.getElementById('pass').value;
+      const type = document.getElementById('type').value;
       
-      // Redirect to the appropriate page
-      if (user.userType === 'driver') {
-        window.location.href = '/driver-checkin.html';
-      } else if (user.userType === 'admin') {
-        window.location.href = '/admin-dashboard.html';
-      } else {
-        window.location.href = '/employee-dashboard.html';
-      }
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: user, password: pass, userType: type}),
+        credentials: 'include'
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.id) {
+          if (type === 'admin') location.href = '/admin-dashboard.html';
+          else if (type === 'driver') location.href = '/driver-checkin.html';
+          else location.href = '/employee-dashboard.html';
+        } else {
+          document.getElementById('msg').innerHTML = 'Login failed';
+        }
+      })
+      .catch(e => document.getElementById('msg').innerHTML = 'Error: ' + e);
     }
-    
-    // Check if redirected from successful registration
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('registered') === 'true') {
-      successMessage.textContent = 'Registration successful! Please log in with your new account.';
-      successMessage.style.display = 'block';
-    }
-    
-    // Set up login form submission using our direct login system
-    loginForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      // Get form data
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const userType = document.getElementById('userType').value;
-      
-      // Use the direct login function
-      directLogin(username, password, userType);
-    });
   </script>
 </body>
 </html>
