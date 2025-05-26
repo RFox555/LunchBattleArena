@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - Kout Transportation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px 0;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            height: 50px;
+        }
+        
+        .logout-btn {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #c53030;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .status-checked-in {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .status-checked-out {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #e53e3e;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #c53030;
+        }
+        
+        .btn-secondary {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #3182ce;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .scanner-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        #reader {
+            max-width: 100%;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .manual-entry {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            align-items: end;
+        }
+        
+        .manual-entry input {
+            flex: 1;
+        }
+        
+        .manual-entry button {
+            white-space: nowrap;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .message.success {
+            background: #c6f6d5;
+            color: #2f855a;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .message.error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .manual-entry {
+                flex-direction: column;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <img src="/attached_assets/Screenshot_20250430_102637_Google.jpg" alt="Kout Food Group" class="logo">
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="dashboard-grid">
+            <!-- Driver Status Card -->
+            <div class="card">
+                <h2 class="card-title">Driver Status</h2>
+                <div id="statusIndicator" class="status-indicator status-checked-out">Checked Out</div>
+                <p><strong>Driver:</strong> <span id="driverName">Loading...</span></p>
+                
+                <div id="checkInForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="checkInLocation">Current Location</label>
+                        <input type="text" id="checkInLocation" placeholder="e.g., Bus Terminal A" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="checkInNote">Notes (Optional)</label>
+                        <textarea id="checkInNote" placeholder="Any notes about your shift" rows="3"></textarea>
+                    </div>
+                    <button id="checkInBtn" class="btn btn-primary">Start Shift</button>
+                </div>
+                
+                <div id="checkOutForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="checkOutNote">End of Shift Notes (Optional)</label>
+                        <textarea id="checkOutNote" placeholder="Any notes about your completed shift" rows="3"></textarea>
+                    </div>
+                    <button id="checkOutBtn" class="btn btn-danger">End Shift</button>
+                </div>
+            </div>
+            
+            <!-- Employee Scanner Card -->
+            <div class="card">
+                <h2 class="card-title">Employee Check-In Scanner</h2>
+                <div id="scannerMessage" class="message">You must check in before scanning employee QR codes</div>
+                
+                <div class="scanner-container">
+                    <div id="reader"></div>
+                    <button id="startScan" class="btn btn-secondary" disabled>Start Scanner</button>
+                    <button id="stopScan" class="btn btn-danger" style="display: none;">Stop Scanner</button>
+                    
+                    <div class="manual-entry">
+                        <div class="form-group" style="margin: 0; flex: 1;">
+                            <label for="manualEmployeeId">Manual Entry</label>
+                            <input type="text" id="manualEmployeeId" placeholder="Enter 5-digit Employee ID" maxlength="5" disabled>
+                        </div>
+                        <button id="manualSubmit" class="btn btn-primary" disabled>Check In</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        let currentUser = null;
+        let isCheckedIn = false;
+        let html5QrCode = null;
+        let isScanning = false;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkAuth();
+            setupEventListeners();
+            await checkDriverStatus();
+        });
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                currentUser = await response.json();
+                document.getElementById('driverName').textContent = currentUser.name || currentUser.username;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/';
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('checkInBtn').addEventListener('click', checkIn);
+            document.getElementById('checkOutBtn').addEventListener('click', checkOut);
+            document.getElementById('startScan').addEventListener('click', startScanner);
+            document.getElementById('stopScan').addEventListener('click', stopScanner);
+            document.getElementById('manualSubmit').addEventListener('click', processManualEntry);
+            
+            // Auto-format employee ID input
+            document.getElementById('manualEmployeeId').addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+            });
+        }
+
+        async function checkDriverStatus() {
+            try {
+                const response = await fetch(`/api/drivers/${currentUser.id}/status`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const status = await response.json();
+                    isCheckedIn = status.isCheckedIn;
+                    updateUI();
+                }
+            } catch (error) {
+                console.error('Error checking driver status:', error);
+            }
+        }
+
+        function updateUI() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const checkInForm = document.getElementById('checkInForm');
+            const checkOutForm = document.getElementById('checkOutForm');
+            const scannerMessage = document.getElementById('scannerMessage');
+            const startScanBtn = document.getElementById('startScan');
+            const manualInput = document.getElementById('manualEmployeeId');
+            const manualSubmit = document.getElementById('manualSubmit');
+
+            if (isCheckedIn) {
+                statusIndicator.textContent = 'Checked In';
+                statusIndicator.className = 'status-indicator status-checked-in';
+                checkInForm.style.display = 'none';
+                checkOutForm.style.display = 'block';
+                
+                scannerMessage.textContent = 'Ready to scan employee QR codes';
+                scannerMessage.className = 'message success';
+                scannerMessage.style.display = 'block';
+                
+                startScanBtn.disabled = false;
+                manualInput.disabled = false;
+                manualSubmit.disabled = false;
+            } else {
+                statusIndicator.textContent = 'Checked Out';
+                statusIndicator.className = 'status-indicator status-checked-out';
+                checkInForm.style.display = 'block';
+                checkOutForm.style.display = 'none';
+                
+                scannerMessage.textContent = 'You must check in before scanning employee QR codes';
+                scannerMessage.className = 'message error';
+                scannerMessage.style.display = 'block';
+                
+                startScanBtn.disabled = true;
+                manualInput.disabled = true;
+                manualSubmit.disabled = true;
+                
+                if (isScanning) {
+                    stopScanner();
+                }
+            }
+        }
+
+        async function checkIn() {
+            const location = document.getElementById('checkInLocation').value.trim();
+            const note = document.getElementById('checkInNote').value.trim();
+
+            if (!location) {
+                showMessage('Please enter your current location', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/drivers/${currentUser.id}/check-in`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location, note }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    isCheckedIn = true;
+                    updateUI();
+                    showMessage('Successfully checked in!', 'success');
+                    document.getElementById('checkInLocation').value = '';
+                    document.getElementById('checkInNote').value = '';
+                } else {
+                    throw new Error('Check-in failed');
+                }
+            } catch (error) {
+                console.error('Check-in error:', error);
+                showMessage('Check-in failed. Please try again.', 'error');
+            }
+        }
+
+        async function checkOut() {
+            if (!confirm('Are you sure you want to end your shift?')) return;
+
+            const note = document.getElementById('checkOutNote').value.trim();
+
+            try {
+                const response = await fetch(`/api/drivers/${currentUser.id}/check-out`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    isCheckedIn = false;
+                    updateUI();
+                    showMessage('Successfully checked out!', 'success');
+                    document.getElementById('checkOutNote').value = '';
+                } else {
+                    throw new Error('Check-out failed');
+                }
+            } catch (error) {
+                console.error('Check-out error:', error);
+                showMessage('Check-out failed. Please try again.', 'error');
+            }
+        }
+
+        function startScanner() {
+            if (!isCheckedIn) {
+                showMessage('You must check in before scanning', 'error');
+                return;
+            }
+
+            try {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
+
+                const config = { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                ).then(() => {
+                    isScanning = true;
+                    document.getElementById('startScan').style.display = 'none';
+                    document.getElementById('stopScan').style.display = 'inline-block';
+                    showMessage('Scanner active. Point camera at employee QR code.', 'success');
+                }).catch(err => {
+                    console.error('Scanner start failed:', err);
+                    showMessage('Failed to start scanner. Please check camera permissions.', 'error');
+                });
+            } catch (error) {
+                console.error('Scanner error:', error);
+                showMessage('Scanner initialization failed.', 'error');
+            }
+        }
+
+        function stopScanner() {
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    isScanning = false;
+                    document.getElementById('startScan').style.display = 'inline-block';
+                    document.getElementById('stopScan').style.display = 'none';
+                    showMessage('Scanner stopped.', 'success');
+                }).catch(err => {
+                    console.error('Scanner stop failed:', err);
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            console.log('QR code scanned:', decodedText);
+            stopScanner();
+            processEmployeeCheckIn(decodedText.trim());
+        }
+
+        function onScanFailure(error) {
+            // Don't log scan failures as they happen constantly during scanning
+        }
+
+        function processManualEntry() {
+            const employeeId = document.getElementById('manualEmployeeId').value.trim();
+            if (employeeId) {
+                document.getElementById('manualEmployeeId').value = '';
+                processEmployeeCheckIn(employeeId);
+            }
+        }
+
+        async function processEmployeeCheckIn(employeeId) {
+            if (!employeeId || employeeId.length !== 5 || !/^\d+$/.test(employeeId)) {
+                showMessage('Invalid employee ID. Please enter a 5-digit number.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/trips', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        riderId: employeeId,
+                        location: document.getElementById('checkInLocation').value || 'Bus Stop',
+                        note: 'Checked in via driver scanner'
+                    }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showMessage(`Employee ${employeeId} successfully checked in!`, 'success');
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Check-in failed');
+                }
+            } catch (error) {
+                console.error('Employee check-in failed:', error);
+                showMessage(`Failed to check in employee: ${error.message}`, 'error');
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('scannerMessage');
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                if (isCheckedIn) {
+                    messageDiv.textContent = 'Ready to scan employee QR codes';
+                    messageDiv.className = 'message success';
+                } else {
+                    messageDiv.textContent = 'You must check in before scanning employee QR codes';
+                    messageDiv.className = 'message error';
+                }
+            }, 5000);
+        }
+
+        function logout() {
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            }).then(() => {
+                window.location.href = '/';
+            }).catch(() => {
+                window.location.href = '/';
+            });
+        }
+    </script>
+</body>
+</html>
