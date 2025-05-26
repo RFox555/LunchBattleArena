@@ -31,21 +31,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register master list routes
   registerMasterListRoutes(app);
   
-  // Setup session with PostgreSQL store
+  // Setup session with simple memory store for now
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "transportation-tracking-system-secret",
-      resave: true,
-      saveUninitialized: true, // Changed to true to ensure sessions are always created
-      rolling: true, // Reset expiration counter on every response
+      resave: false,
+      saveUninitialized: false,
+      rolling: false,
       cookie: { 
-        secure: false, // Set to false for both dev and prod to ensure cookies work
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         path: '/',
         httpOnly: true,
         sameSite: 'lax'
-      },
-      store: storage.sessionStore
+      }
     })
   );
   
@@ -95,8 +94,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication middleware
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+    console.log('Session check - session object exists:', !!req.session);
+    console.log('Session check - userId in session:', req.session?.userId);
+    
     if (!req.session || !req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      console.log('Session check failed - returning 401');
+      return res.status(401).json({ message: "Not authenticated" });
     }
     
     // Touch the session to keep it active
