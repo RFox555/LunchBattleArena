@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transportation Login - FIXED</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .logo {
+            width: 200px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .message {
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <img src="/attached_assets/Screenshot_20250430_102637_Google.jpg" alt="Kout Food Group" class="logo">
+        <h1>Transportation System</h1>
+        
+        <div class="form-group">
+            <label>Username:</label>
+            <input type="text" id="username" placeholder="Enter username">
+        </div>
+        
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        
+        <div class="form-group">
+            <label>User Type:</label>
+            <select id="userType">
+                <option value="driver">Driver</option>
+                <option value="rider">Employee</option>
+                <option value="admin">Administrator</option>
+            </select>
+        </div>
+        
+        <button onclick="login()">LOGIN</button>
+        
+        <div id="message" style="display: none;"></div>
+    </div>
+
+    <script>
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            const messageDiv = document.getElementById('message');
+            
+            if (!username || !password) {
+                showMessage('Please enter username and password', 'error');
+                return;
+            }
+            
+            showMessage('Logging in...', 'success');
+            
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                    userType: userType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                
+                if (data.id) {
+                    showMessage('Success! Redirecting...', 'success');
+                    localStorage.setItem('user', JSON.stringify(data));
+                    
+                    setTimeout(() => {
+                        if (userType === 'admin') {
+                            location.href = '/admin.html';
+                        } else if (userType === 'driver') {
+                            location.href = '/driver.html';
+                        } else {
+                            location.href = '/employee.html';
+                        }
+                    }, 1000);
+                } else {
+                    showMessage('Login failed - check your credentials', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Connection error - please try again', 'error');
+            });
+        }
+        
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+        }
+        
+        // Allow Enter key to submit
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
