@@ -167,37 +167,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Regenerate session to prevent session fixation attacks
-      return req.session.regenerate((regenerateErr) => {
-        if (regenerateErr) {
-          console.error("Session regeneration error:", regenerateErr);
-          return res.status(500).json({ message: "Failed to create session" });
-        }
+      // Set session data directly without regeneration
+      console.log("Login successful - setting session data");
+      req.session.userId = user.id;
+      req.session.userType = data.userType as 'driver' | 'rider' | 'admin';
+      req.session.createdAt = new Date().toISOString();
       
-        // Set user session with required data
-        console.log("Login successful - setting session data in new session");
-        req.session.userId = user.id;
-        // Use the requested userType for session to avoid type issues
-        req.session.userType = data.userType as 'driver' | 'rider' | 'admin';
-        req.session.createdAt = new Date().toISOString();
-        
-        console.log("Session data set, now saving");
-        
-        // Save the session and wait for it to complete before sending response
-        return req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error("Session save error:", saveErr);
-            return res.status(500).json({ message: "Failed to save session" });
-          }
-          
-          console.log("Session saved successfully, sessionID:", req.sessionID);
-          console.log("Final session data:", req.session);
-          
-          // Return user data (without password)
-          const { password, ...safeUser } = user;
-          return res.status(200).json(safeUser);
-        });
+      console.log("Session data set:", {
+        userId: req.session.userId,
+        userType: req.session.userType,
+        sessionID: req.sessionID
       });
+      
+      // Return user data immediately
+      const { password, ...safeUser } = user;
+      return res.status(200).json(safeUser);
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof ZodError) {
