@@ -168,10 +168,12 @@
                     messageDiv.style.display = 'block';
                     
                     setTimeout(() => {
-                        if (userType === 'admin') {
+                        if (data.userType === 'admin') {
                             window.location.href = '/admin.html';
-                        } else if (userType === 'driver') {
+                        } else if (data.userType === 'driver') {
                             window.location.href = '/driver.html';
+                        } else if (data.userType === 'rider') {
+                            window.location.href = '/employee.html';
                         } else {
                             window.location.href = '/employee.html';
                         }
