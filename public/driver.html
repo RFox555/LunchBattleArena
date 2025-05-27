@@ -200,7 +200,7 @@
             
             currentUser = JSON.parse(userData);
             
-            if (currentUser.type !== 'driver') {
+            if (currentUser.userType !== 'driver') {
                 alert('Access denied. This page is for drivers only.');
                 window.location.href = '/login.html';
                 return;
