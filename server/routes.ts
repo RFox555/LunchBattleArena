@@ -96,13 +96,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Authentication middleware
+  // Authentication middleware - supports both session and token auth
   const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+    console.log('Auth check - checking both session and token');
+    
+    // First try token-based authentication
+    const token = req.cookies.auth_token;
+    if (token && (global as any).activeUsers && (global as any).activeUsers[token]) {
+      const userData = (global as any).activeUsers[token];
+      console.log('Token auth successful for user:', userData.username);
+      
+      // Set session-like data for compatibility
+      req.session = req.session || {} as any;
+      req.session.userId = userData.id;
+      req.session.userType = userData.userType;
+      
+      return next();
+    }
+    
+    // Fall back to session-based authentication
     console.log('Session check - session object exists:', !!req.session);
     console.log('Session check - userId in session:', req.session?.userId);
     
     if (!req.session || !req.session.userId) {
-      console.log('Session check failed - returning 401');
+      console.log('Both auth methods failed - returning 401');
       return res.status(401).json({ message: "Not authenticated" });
     }
     
