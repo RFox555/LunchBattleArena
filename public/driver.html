@@ -283,7 +283,7 @@
                 return;
             }
 
-            fetch('/api/driver/check-in', {
+            fetch('/api/driver/checkin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ driverId: currentUser.id, location, note })

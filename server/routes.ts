@@ -575,7 +575,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Driver Check-in API (start shift)  
+  // Driver Check-in API (start shift) - both endpoints for compatibility
+  app.post("/api/driver/checkin", authenticateUser, async (req, res) => {
+    try {
+      // Validate that the user is a driver
+      if (req.session.userType !== "driver") {
+        return res.status(403).json({ message: "Only drivers can use this endpoint" });
+      }
+      
+      // Validate the request body
+      const result = driverCheckInSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid driver check-in data", 
+          details: result.error.format() 
+        });
+      }
+      
+      const data = result.data;
+      
+      // Check in the driver
+      const updatedDriver = await storage.checkInDriver(
+        req.session.userId!, 
+        data.location,
+        data.note
+      );
+      
+      if (!updatedDriver) {
+        return res.status(500).json({ message: "Failed to check in driver" });
+      }
+      
+      // Return the updated driver info (without password)
+      const { password, ...safeUser } = updatedDriver;
+      console.log("Driver check-in successful", { driverId: updatedDriver.id });
+      return res.status(200).json(safeUser);
+    } catch (error) {
+      console.error("Error in driver check-in API:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/driver/check-in", authenticateUser, async (req, res) => {
     try {
       // Validate that the user is a driver
