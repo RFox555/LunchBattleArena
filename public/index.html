@@ -139,7 +139,7 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
@@ -147,47 +147,44 @@
             const userType = document.getElementById('userType').value;
             const messageDiv = document.getElementById('message');
             
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({ username, password, userType })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok && data.id) {
-                    // Store user data in localStorage
+            messageDiv.textContent = 'Logging in...';
+            messageDiv.className = 'message';
+            messageDiv.style.display = 'block';
+            
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, userType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Login response:', data);
+                if (data && data.id) {
                     localStorage.setItem('currentUser', JSON.stringify(data));
-                    
                     messageDiv.textContent = 'Login successful! Redirecting...';
                     messageDiv.className = 'message success';
-                    messageDiv.style.display = 'block';
                     
-                    setTimeout(() => {
-                        if (data.userType === 'admin') {
-                            window.location.href = '/admin.html';
-                        } else if (data.userType === 'driver') {
-                            window.location.href = '/driver.html';
-                        } else if (data.userType === 'rider') {
-                            window.location.href = '/employee.html';
-                        } else {
-                            window.location.href = '/employee.html';
-                        }
-                    }, 500);
+                    // Direct redirect based on user type
+                    if (userType === 'admin') {
+                        window.location.replace('/admin.html');
+                    } else if (userType === 'driver') {
+                        window.location.replace('/driver.html');
+                    } else {
+                        window.location.replace('/employee.html');
+                    }
                 } else {
-                    messageDiv.textContent = data.message || 'Login failed. Please check your credentials.';
+                    messageDiv.textContent = 'Login failed. Please check your credentials.';
                     messageDiv.className = 'message error';
-                    messageDiv.style.display = 'block';
                 }
-            } catch (error) {
-                messageDiv.textContent = 'Network error. Please try again.';
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                messageDiv.textContent = 'Login failed. Please try again.';
                 messageDiv.className = 'message error';
-                messageDiv.style.display = 'block';
-            }
+            });
         });
     </script>
 </body>
