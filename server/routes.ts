@@ -219,9 +219,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/auth/me", async (req, res) => {
+    console.log("Auth check - cookies:", req.cookies);
     const token = req.cookies.auth_token;
+    console.log("Auth check - token:", token);
+    console.log("Auth check - activeUsers:", (global as any).activeUsers ? Object.keys((global as any).activeUsers) : 'undefined');
     
     if (!token || !(global as any).activeUsers || !(global as any).activeUsers[token]) {
+      console.log("Auth check failed - no valid token");
       return res.status(401).json({ message: "Not authenticated" });
     }
     

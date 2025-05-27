@@ -160,6 +160,9 @@
                 const data = await response.json();
                 
                 if (response.ok && data.id) {
+                    // Store user data in localStorage
+                    localStorage.setItem('currentUser', JSON.stringify(data));
+                    
                     messageDiv.textContent = 'Login successful! Redirecting...';
                     messageDiv.className = 'message success';
                     messageDiv.style.display = 'block';
@@ -172,7 +175,7 @@
                         } else {
                             window.location.href = '/employee.html';
                         }
-                    }, 1000);
+                    }, 500);
                 } else {
                     messageDiv.textContent = data.message || 'Login failed. Please check your credentials.';
                     messageDiv.className = 'message error';

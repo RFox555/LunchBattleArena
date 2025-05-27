@@ -243,16 +243,13 @@
 
         async function checkAuth() {
             try {
-                const response = await fetch('/api/auth/me', {
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
+                const userData = localStorage.getItem('currentUser');
+                if (!userData) {
                     window.location.href = '/';
                     return;
                 }
 
-                currentUser = await response.json();
+                currentUser = JSON.parse(userData);
                 
                 if (currentUser.userType !== 'admin') {
                     alert('Access denied. This page is for administrators only.');
