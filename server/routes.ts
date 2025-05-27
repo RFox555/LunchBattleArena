@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import express from "express";
 import session from "express-session";
+import * as cookieParser from "cookie-parser";
 import { ZodError } from "zod";
 import { WebSocketServer, WebSocket } from "ws";
 import path from "path";
@@ -30,6 +31,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register master list routes
   registerMasterListRoutes(app);
+  
+  // Add cookie parser middleware
+  app.use(cookieParser.default());
   
   // Setup session with simple memory store for now
   app.use(
