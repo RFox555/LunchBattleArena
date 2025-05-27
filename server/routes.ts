@@ -212,9 +212,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sameSite: 'lax'
       });
       
-      // Return user data
+      // Return user data in the format the frontend expects
       const { password, ...safeUser } = user;
-      return res.status(200).json(safeUser);
+      return res.status(200).json({ 
+        success: true, 
+        user: safeUser 
+      });
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof ZodError) {
