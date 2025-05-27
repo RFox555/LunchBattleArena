@@ -167,19 +167,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Set session data directly without regeneration
-      console.log("Login successful - setting session data");
-      req.session.userId = user.id;
-      req.session.userType = data.userType as 'driver' | 'rider' | 'admin';
-      req.session.createdAt = new Date().toISOString();
+      // Create a simple token and store it in cookie
+      const token = `user_${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      console.log("Session data set:", {
-        userId: req.session.userId,
-        userType: req.session.userType,
-        sessionID: req.sessionID
+      // Store user data in memory with token
+      (global as any).activeUsers = (global as any).activeUsers || {};
+      (global as any).activeUsers[token] = {
+        id: user.id,
+        username: user.username,
+        userType: user.userType,
+        name: user.name,
+        riderId: user.riderId,
+        loginTime: new Date()
+      };
+      
+      console.log("Login successful - token created:", token);
+      
+      // Set token in cookie
+      res.cookie('auth_token', token, {
+        httpOnly: true,
+        secure: false,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax'
       });
       
-      // Return user data immediately
+      // Return user data
       const { password, ...safeUser } = user;
       return res.status(200).json(safeUser);
     } catch (error) {
@@ -203,34 +215,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    console.log("Session check - session object exists:", !!req.session);
-    console.log("Session check - userId in session:", req.session?.userId);
+    const token = req.cookies.auth_token;
     
-    if (!req.session || !req.session.userId) {
-      console.log("Session check failed - returning 401");
+    if (!token || !(global as any).activeUsers || !(global as any).activeUsers[token]) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
-    try {
-      console.log("Session check - fetching user with ID:", req.session.userId);
-      const user = await storage.getUser(req.session.userId);
-      
-      if (!user) {
-        console.log("Session check - user not found in database");
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      console.log("Session check - user found:", user.username);
-      
-      // Create a safe user object without password
-      const { password, ...safeUser } = user;
-      
-      // Return user data immediately without additional session manipulation
-      return res.status(200).json(safeUser);
-    } catch (error) {
-      console.error("Authentication check error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
+    const userData = (global as any).activeUsers[token];
+    console.log("Token auth - user found:", userData.username);
+    
+    return res.status(200).json(userData);
   });
 
   // User management routes
