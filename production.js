@@ -1,10 +1,9 @@
-// Production server - exact copy of working development setup
 process.env.NODE_ENV = 'production';
 
 import express from "express";
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { registerRoutes } from "./server/routes.js";
+import { registerRoutes } from "./server/routes.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +12,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logging middleware (same as dev)
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -42,7 +40,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Error handling (same as dev)
 app.use((err, _req, res, _next) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
@@ -50,17 +47,12 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ message });
 });
 
-async function main() {
-  const server = await registerRoutes(app);
-  
-  // Serve static files
-  app.use(express.static(path.join(__dirname, 'public')));
-  app.use('/attached_assets', express.static(path.join(__dirname, 'attached_assets')));
-  
-  const PORT = process.env.PORT || 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Transportation Tracking System running on port ${PORT}`);
-  });
-}
+const server = await registerRoutes(app);
 
-main().catch(console.error);
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/attached_assets', express.static(path.join(__dirname, 'attached_assets')));
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Transportation Tracking System running on port ${PORT}`);
+});
