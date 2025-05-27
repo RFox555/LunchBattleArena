@@ -101,7 +101,7 @@
             
             currentUser = JSON.parse(userData);
             
-            if (currentUser.type !== 'employee') {
+            if (currentUser.userType !== 'rider') {
                 alert('Access denied. This page is for employees only.');
                 window.location.href = '/login.html';
                 return;

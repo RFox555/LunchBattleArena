@@ -171,7 +171,7 @@
             
             currentUser = JSON.parse(userData);
             
-            if (currentUser.type !== 'admin') {
+            if (currentUser.userType !== 'admin') {
                 alert('Access denied. This page is for administrators only.');
                 window.location.href = '/login.html';
                 return;
