@@ -1,52 +1,146 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login</title>
-  <style>
-    body { font-family: Arial; margin: 50px; }
-    .form { max-width: 400px; margin: 0 auto; }
-    input, select { width: 100%; padding: 10px; margin: 10px 0; }
-    button { width: 100%; padding: 15px; background: #007bff; color: white; border: none; }
-  </style>
+    <title>Kout Transportation Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 50px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .logo {
+            width: 200px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        input, select {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #c53030;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #faa;
+        }
+        .success {
+            background: #efe;
+            color: #060;
+            border: 1px solid #afa;
+        }
+    </style>
 </head>
 <body>
-  <div class="form">
-    <h2>Login</h2>
-    <input type="text" id="user" placeholder="Username" value="admin">
-    <input type="password" id="pass" placeholder="Password" value="admin123">
-    <select id="type">
-      <option value="admin">Admin</option>
-      <option value="driver">Driver</option>
-      <option value="rider">Employee</option>
-    </select>
-    <button onclick="login()">Login</button>
-    <div id="msg"></div>
-  </div>
-  
-  <script>
-    function login() {
-      const user = document.getElementById('user').value;
-      const pass = document.getElementById('pass').value;
-      const type = document.getElementById('type').value;
-      
-      fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username: user, password: pass, userType: type}),
-        credentials: 'include'
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.id) {
-          if (type === 'admin') location.href = '/admin-dashboard.html';
-          else if (type === 'driver') location.href = '/driver-checkin.html';
-          else location.href = '/employee-dashboard.html';
-        } else {
-          document.getElementById('msg').innerHTML = 'Login failed';
+    <div class="container">
+        <img src="/attached_assets/Screenshot_20250430_102637_Google.jpg" alt="Kout Food Group" class="logo">
+        <h1>Transportation Tracking</h1>
+        
+        <input type="text" id="username" placeholder="Username" value="admin">
+        <input type="password" id="password" placeholder="Password" value="admin123">
+        <select id="userType">
+            <option value="admin">Administrator</option>
+            <option value="driver">Driver</option>
+            <option value="employee">Employee</option>
+        </select>
+        <button onclick="login()">Login</button>
+        
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, userType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    showMessage('Login successful!', 'success');
+                    
+                    setTimeout(() => {
+                        if (userType === 'admin') {
+                            window.location.href = '/admin.html';
+                        } else if (userType === 'driver') {
+                            window.location.href = '/driver.html';
+                        } else {
+                            window.location.href = '/employee.html';
+                        }
+                    }, 1000);
+                } else {
+                    showMessage('Login failed: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Network error: ' + error.message, 'error');
+            });
         }
-      })
-      .catch(e => document.getElementById('msg').innerHTML = 'Error: ' + e);
-    }
-  </script>
+        
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+            msg.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => msg.style.display = 'none', 3000);
+            }
+        }
+        
+        // Enter key to login
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
 </body>
 </html>
