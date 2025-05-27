@@ -220,7 +220,7 @@
         }
 
         function checkDriverStatus() {
-            fetch(`/api/driver/${currentUser.id}/status`)
+            fetch(`/api/driver/status`)
             .then(response => response.json())
             .then(status => {
                 isCheckedIn = status.checkedIn || false;
@@ -283,7 +283,7 @@
                 return;
             }
 
-            fetch('/api/driver/checkin', {
+            fetch('/api/driver/check-in', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ driverId: currentUser.id, location, note })
